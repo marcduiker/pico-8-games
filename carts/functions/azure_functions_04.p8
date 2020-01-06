@@ -67,9 +67,9 @@ local map_tile_types={
 	wall=0,
 	collectable=1,
 	anim_state_1=2,
- anim_state_2=3,
- end_tile=4,
- game_over=5
+	anim_state_2=3,
+	end_tile=4,
+	game_over=5
 }
 
 function init_map(level)
