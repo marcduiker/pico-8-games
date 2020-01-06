@@ -1,3 +1,11 @@
+# Personal
+*.code-workspace
+
+# Pico-8
+*config.txt
+*sdl_controllers.txt
+*log.txt
+
 # Compiled Lua sources
 luac.out
 
