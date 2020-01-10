@@ -3,20 +3,14 @@ version 18
 __lua__
 -- azure functions, the game
 -- by marc duiker
- 
+
+local _upd
+local _drw
 local player
 local menu
 local game_map
 local end_game
 local levels
-local states={
-	menu=0,
-	game=1,
-	end_game=2
-}
-local game={
- state=states.menu
-}
 
 function _init()
 	music(0,1)
@@ -25,31 +19,17 @@ function _init()
 	init_player(levels[1])
 	init_map(levels[1])
 	init_bugs(levels[1])
-	init_end_game()
+	_upd=menu.update
+	_drw=menu.draw
 end
 
 function _update()
- if game.state==states.menu then
- 	menu:update()
- elseif game.state==states.game then
- 	game_map:update()
- 	player:update()
- elseif game.state==states.end_game then
- 	end_game:update()
- end
+ _upd()
 end
 
 function _draw()
  cls()
- 	
- if game.state==states.menu then
-		menu:draw()
-	elseif game.state==states.game then
- 	game_map:draw()
-	 player:draw()
- elseif game.state==states.end_game then
- 	end_game:draw()
- end
+ _drw()
 end
 -->8
 -- map
@@ -110,27 +90,22 @@ function init_map(level)
 		server_timer=0,
 		bug_timer=0,
 		server_anim_time=30,
-		bug_anim_time=15,
-		update=function(self)
-			if self.server_timer<0 then
-				animate_tiles()
-				self.server_timer=self.server_anim_time
-			end
-			if self.bug_timer<0 and not player:is_dialog_state() then
-				move_bugs()
-				self.bug_timer=self.bug_anim_time		
-			end
-			self.server_timer-=1
-			self.bug_timer-=1
-		end,
-		
-		draw=function(self)
-			map(0,0,0,0,80,16)
-			local current_level=levels[game_map.level]
-			camera(current_level.camera_x,current_level.camera_y)
-		end
+		bug_anim_time=15
 	}
 end
+
+function update_gamemap()
+			if game_map.server_timer<0 then
+				animate_tiles()
+				game_map.server_timer=game_map.server_anim_time
+			end
+			if game_map.bug_timer<0 and not player:is_dialog_state() then
+				move_bugs()
+				game_map.bug_timer=game_map.bug_anim_time		
+			end
+			game_map.server_timer-=1
+			game_map.bug_timer-=1
+		end
 
 function move_bugs()
 	for bug in all(bugs) do
@@ -276,9 +251,13 @@ function open_door()
 end
 -->8
 -- player
+
+local step = 1
+local score_incr=10
 local sprites={
 	normal=1,
-	special=2
+	special=2,
+	shadow=3
 }
 
 sounds={
@@ -292,199 +271,207 @@ sounds={
 }
 
 local picked_up={}
+local shadow_x={8,-8,0,0}
+local shadow_y={0,0,8,-8}
 
 function init_player(level)
-	local step = 1
-	local score_incr=10
+	
 	player = {
- 	x=level.player_x,
+		x=level.player_x,
 		y=level.player_y,
-	 normal=true,
-	 score=0,
-	 moves=0,
-	 false_moves=0,
-	 avocado_toggle=false,
-	 level_start=true,
-	 false_move_toggle=false,
-	 level_complete_toggle=false,
-	 game_over_toggle=false,
-	  
-		update=function(self)
-	 	local new_x=self.x
-	 	local new_y=self.y
-	 	local old_x=self.x
-	 	local old_y=self.y
-	 		 	
-	 	if (btnp(⬅️) and not self:is_dialog_state()) then 
-	 		new_x-=step
-	 		self.moves+=1 
-	 	end
-	 	if (btnp(➡️) and not self:is_dialog_state()) then 
-	 		new_x+=step
-	 		self.moves+=1 
-	 	end
-	 	if (btnp(⬆️) and not self:is_dialog_state()) then 
-	 		new_y-=step
-	 		self.moves+=1 
-	 	end
-	 	if (btnp(⬇️) and not self:is_dialog_state()) then 
-	 		new_y+=step
-	 		self.moves+=1 
-	 	end
-		 
-		 if can_move(new_x, new_y) then
-		 	self.x=new_x
-		 	self.y=new_y
-		 	if old_x!=self.x or old_y!=self.y then
-		 		self:play_move_sound()
-		 		self.false_moves=0
-		 	end
-		 else
-		 	self:play_bump_sound()
-		 	self.false_moves+=1
-		 	if (self.false_moves > 10) then
-					self.false_move_toggle=true
-					self.dailog_state=true
+		shadow_x_pix=0,
+		shadow_y_pix=0,
+		direction=nil,
+		normal=true,
+		score=0,
+		moves=0,
+		shadow_timer=0,
+		shadow_anim_time=8,
+		false_moves=0,
+		avocado_toggle=false,
+		level_start=true,
+		false_move_toggle=false,
+		level_complete_toggle=false,
+		game_over_toggle=false,
+
+				
+		move_shadow=function(self)
+			if self.shadow_timer < 0 then
+				for delta=1,8 do
+					self.shadow_x_pix=self.x*8+(shadow_x[self.direction+1]/delta)
+					self.shadow_y_pix=self.y*8+(shadow_y[self.direction+1]/delta)
 				end
-		end
-		
-		if (is_collectable(self.x,self.y)) then
-			add(picked_up,mget(self.x,self.y))
-			remove_item(self.x, self.y)
-			self:play_pickup_sound()
-			self.score+=score_incr
-			update_servers(self.score)
-			if (self.score==game_map.target_energy) then
-				open_door()
+				self.shadow_anim_time=self.shadow_anim_time
 			end
-			if (is_avocado_fan()) then
-			  self.avocado_toggle=true
-			end
-		elseif (is_bug(self.x,self.y)) then
-			if (not self.game_over_toggle) then
-				self:play_gameover_sound()
-			end
-			self.game_over_toggle=true
-		end
-		
-		if (is_end_tile(self.x,self.y)) then
-			self.level_complete_toggle=true
-		end
-		
-		if (btnp(🅾️)) then
-			if (self.avocado_toggle) then
-				self.avocado_toggle=false
-			end
-			if (self.level_start) then
-				self.level_start=false
-			end
-			if (self.false_move_toggle) then
-				self.false_move_toggle=false
-				self.false_moves=0
-			end
-			if (self.game_over_toggle) then
-				self.game_over_toggle=false
-				extcmd("reset")
-			end
-			if (self.level_complete_toggle) then
-				if (game_map.level<#levels) then
-			 		-- move to next level
-			 		local next_level=game_map.level+1
-			 		init_map(levels[next_level])
-					init_bugs(levels[next_level])
-			 		init_player(levels[next_level])
-				else
-					-- game completed
-					game.state=states.end_game
-				end
-			end
-		end
-		
-		if (btnp(❎)) then 
-			if (not self.normal) then
-				self.normal=true
-			else
-				self.normal=false 
-			end
-			self:play_special_sound()
-			end
+			self.shadow_timer-=1
 		end,
 
-		draw=function(self)
-		--sprite
-		local spr_id
-		if (self.normal) then
+		
+		
+		is_dialog_state=function(self)
+			return self.avocado_toggle or self.false_move_toggle or self.level_complete_toggle or self.level_start or self.game_over_toggle
+		end,
+		
+	}
+end
+
+function update_player()
+			update_gamemap()
+			local new_x=player.x
+			local new_y=player.y
+			local old_x=player.x
+			local old_y=player.y
+			player.shadow_anim_time=0
+			if (btnp(⬅️) and not player:is_dialog_state()) then 
+				new_x-=step
+				player.direction=0
+				player.moves+=1
+			end
+			if (btnp(➡️) and not player:is_dialog_state()) then 
+				new_x+=step
+				player.direction=1
+				player.moves+=1 
+			end
+			if (btnp(⬆️) and not player:is_dialog_state()) then 
+				new_y-=step
+				player.direction=2
+				player.moves+=1 
+			end
+			if (btnp(⬇️) and not player:is_dialog_state()) then 
+				new_y+=step
+				player.direction=3
+				player.moves+=1 
+			end
+			
+			if can_move(new_x, new_y) then
+				player.x=new_x
+				player.y=new_y
+				if old_x!=player.x or old_y!=player.y then
+					play_move_sound()
+					player.false_moves=0
+					player:move_shadow()
+				end
+			else
+				play_bump_sound()
+				player.false_moves+=1
+				if (player.false_moves > 10) then
+					player.false_move_toggle=true
+					player.dailog_state=true
+				end
+			end
+			
+			if (is_collectable(player.x,player.y)) then
+				add(picked_up,mget(player.x,player.y))
+				remove_item(player.x, player.y)
+				play_pickup_sound()
+				player.score+=score_incr
+				update_servers(player.score)
+				if (player.score==game_map.target_energy) then
+					open_door()
+				end
+				if (is_avocado_fan()) then
+				player.avocado_toggle=true
+				end
+			elseif (is_bug(player.x,player.y)) then
+				if (not player.game_over_toggle) then
+					play_gameover_sound()
+				end
+				player.game_over_toggle=true
+			end
+			
+			if (is_end_tile(player.x,player.y)) then
+				player.level_complete_toggle=true
+			end
+			
+			if (btnp(🅾️)) then
+				if (player.avocado_toggle) then
+					player.avocado_toggle=false
+				end
+				if (player.level_start) then
+					player.level_start=false
+				end
+				if (player.false_move_toggle) then
+					player.false_move_toggle=false
+					player.false_moves=0
+				end
+				if (player.game_over_toggle) then
+					player.game_over_toggle=false
+					extcmd("reset")
+				end
+				if (player.level_complete_toggle) then
+					if (game_map.level<#levels) then
+						-- move to next level
+						local next_level=game_map.level+1
+						init_map(levels[next_level])
+						init_bugs(levels[next_level])
+						init_player(levels[next_level])
+					else
+						-- game completed
+						_upd=update_end_game
+						_drw=draw_end_game
+						--game.=states.end_game
+					end
+				end
+			end
+			
+			if (btnp(❎)) then 
+				if (not self.normal) then
+					self.normal=true
+				else
+					self.normal=false 
+				end
+				self:play_special_sound()
+				end
+end
+
+function draw_player()
+			map(0,0,0,0,80,16)
+			local current_level=levels[game_map.level]
+			camera(current_level.camera_x,current_level.camera_y)
+			--sprite
+			local spr_id
+			if (player.normal) then
 				spr_id=sprites.normal
 			else
 				spr_id=sprites.special
 			end
-			spr(spr_id,self.x*8,self.y*8)
+			spr(spr_id,player.x*8,player.y*8)
 			
-			if (self.level_start) then
+			--if (self.shadow_x_pix != nil) then
+				spr(sprites.shadow,player.shadow_x_pix,player.shadow_y_pix)
+			--end
+
+			if (player.level_start) then
 				if (game_map.level==1) then
 					show_level_1_start_text()
 				else
 					show_level_start_text()
 				end
 			end
-			
-			if (self.avocado_toggle) then
+				
+			if (player.avocado_toggle) then
 				show_avocado_text()
 			end
-			
-			if (self.game_over_toggle) then
+				
+			if (player.game_over_toggle) then
 				show_game_over_text()
 			end
-			
-			if (self.false_move_toggle) then
+				
+			if (player.false_move_toggle) then
 				show_bumping_text()
 			end
 			
-			if (self.level_complete_toggle) then
+			if (player.level_complete_toggle) then
 				show_level_end_text()
 			end
 			--score
-			print("energy "..self.score.."%",game_map.pix_x,game_map.pix_y,12)
-			print("moves "..self.moves,game_map.pix_x+90,game_map.pix_y,12)
+			print("energy "..player.score.."%",game_map.pix_x,game_map.pix_y,12)
+			print("moves "..player.moves,game_map.pix_x+90,game_map.pix_y,12)
 			-- debugging
-			--print(self.x.." "..self.y, game_map.pix_x,game_map.y+10,10)
-			--print(game_map.x.." "..game_map.y, game_map.pix_x,game_map.pix_y+18,10)
-			--print(self.level_complete_toggle,game_map.pix_x,game_map.pix_y+26,10)
-			--print(self.level_start,game_map.pix_x,game_map.pix_y+34,10)
-			--print(self:is_dialog_state(),game_map.pix_x,game_map.pix_y+34,10)
-		end,
-		
-		is_dialog_state=function(self)
-			return self.avocado_toggle or self.false_move_toggle or self.level_complete_toggle or self.level_start or self.game_over_toggle
-		end,
-		
-		play_move_sound=function(self)
-				sfx(sounds.move,0,0)
-		end,
-		
-		play_bump_sound=function(self)
-				sfx(sounds.bump,0,0)
-		end,
-		
-		play_pickup_sound=function(self)
-				sfx(sounds.pickup,0,0)
-		end,
-		
-		play_gameover_sound=function(self)
-				sfx(sounds.game_over,0,0)
-		end,
-				
-		play_special_sound=function(self)
-			local sfx_id
-			if (self.normal) then
-				sfx_id=sounds.special_off
-			else
-				sfx_id=sounds.special_on
-			end
-				sfx(sfx_id,0,0)
-		end,
-	}
+			print(player.shadow_x_pix.." "..player.shadow_y_pix, game_map.pix_x,game_map.y+10,10)
+			print(player.shadow_anim_time, game_map.pix_x,game_map.pix_y+18,10)
 end
+
 
 function is_avocado_fan()
 	if (#picked_up>=3) then
@@ -503,7 +490,8 @@ function init_menu()
 	menu={
 		update=function(self)
 			if btnp(❎) then
-				game.state=states.game
+				_upd=update_player
+				_drw=draw_player
 			end
 		end,
 		
@@ -511,7 +499,7 @@ function init_menu()
 			map(0,16,0,0,16,16)
 			print("azure functions",34,24,12)
 			print("the game",48,36,10)
-			print("v0.5",56,48,5)
+			print("v0.6",56,48,5)
 			print("press ❎ to play",32,64,9)
 			print("created by",44,92,7)
 			print("marc duiker",42,100,7)
@@ -522,15 +510,14 @@ end
 -->8
 -- end_game
 
-function init_end_game()
-	end_game={
-		update=function(self)
+
+function update_end_game()
 			if btnp(❎) then
 				extcmd("reset")
 			end
-		end,
-		
-		draw=function(self)
+end
+
+function draw_end_game()
 			map(0,16,game_map.pix_x,game_map.pix_y,16,16)
 			--camera(0,0)
 			print("congratulations!",game_map.pix_x+34,game_map.pix_y+24,12)
@@ -539,8 +526,6 @@ function init_end_game()
 			print("created by",game_map.pix_x+44,game_map.pix_y+92,7)
 			print("marc duiker ",game_map.pix_x+42,game_map.pix_y+100,7)
 		end
-	}
-end
 
 -->8
 -- texts
@@ -700,15 +685,43 @@ function init_levels()
 		level_4
 		}
 end
+-->8
+--sounds
+
+function play_move_sound()
+	sfx(sounds.move,0,0)
+end
+		
+function play_bump_sound()
+	sfx(sounds.bump,0,0)
+end
+		
+function play_pickup_sound()
+	sfx(sounds.pickup,0,0)
+end
+		
+function play_gameover_sound()
+	sfx(sounds.game_over,0,0)
+end
+				
+function play_special_sound()
+	local sfx_id
+	if (self.normal) then
+		sfx_id=sounds.special_off
+	else
+		sfx_id=sounds.special_on
+	end
+		sfx(sfx_id,0,0)
+end
 __gfx__
-000000000009a000a00a700a00000000666666666688886666666666666336666666666668868876000000000000000000000000000000000000000000000000
-070000700019a1000a1a71a000000000888733366899998666c76666663bb3666116611688888887000000000000000000000000000000000000000000000000
-007007000109a010010a7010000000008887333689aaaa986ccc7666663bb3666166661688888887000000000000000000000000000000000000000000000000
-0007700010009a011000a70100000000888733369abbbba9c7cccc7663bbbb36616cc61688888887000000000000000000000000000000000000000000000000
-00077000c0009a0cc000a70c0000000077777776abccccbacc7c7cc763b44b361666666188888887000000000000000000000000000000000000000000000000
-007007000c09a0c00c0a70c000000000ccc79996bc2222cbccccc7cc63b44b36616cc61668888876000000000000000000000000000000000000000000000000
-0700007000c90c000aca0ca000000000ccc79996c266662c6cccccc663bbbb366166661666888766000000000000000000000000000000000000000000000000
-0000000000090000a00a000a00000000ccc799962666666266666666663333666116611666687666000000000000000000000000000000000000000000000000
+000000000009a000a00a700a0009a000666666666688886666666666666336666666666668868876000000000000000000000000000000000000000000000000
+070000700019a1000a1a71a00009a000888733366899998666c76666663bb3666116611688888887000000000000000000000000000000000000000000000000
+007007000109a010010a70100009a0008887333689aaaa986ccc7666663bb3666166661688888887000000000000000000000000000000000000000000000000
+0007700010009a011000a70100009a00888733369abbbba9c7cccc7663bbbb36616cc61688888887000000000000000000000000000000000000000000000000
+00077000c0009a0cc000a70c00009a0077777776abccccbacc7c7cc763b44b361666666188888887000000000000000000000000000000000000000000000000
+007007000c09a0c00c0a70c00009a000ccc79996bc2222cbccccc7cc63b44b36616cc61668888876000000000000000000000000000000000000000000000000
+0700007000c90c000aca0ca000090000ccc79996c266662c6cccccc663bbbb366166661666888766000000000000000000000000000000000000000000000000
+0000000000090000a00a000a00090000ccc799962666666266666666663333666116611666687666000000000000000000000000000000000000000000000000
 66666666255555552555555500000000888888880000000063333336633333366333333600000000000000000000000000000000000000000000000000000000
 6666666625112125251181250000000085555558000000003333333333333333333bb33300000000000000000000000000000000000000000000000000000000
 6666666625555555255555550000000085cccc5800000000333333333333333333bbbb3300000000000000000000000000000000000000000000000000000000
@@ -725,6 +738,14 @@ __gfx__
 0000000025b311250000000000000000366666630000000099344399993443990000000000000000000000000000000000000000000000000000000000000000
 00000000255555550000000000000000366666630000000093933936639339390000000000000000000000000000000000000000000000000000000000000000
 00000000256666250000000000000000366666630000000066966966669669660000000000000000000000000000000000000000000000000000000000000000
+000000002aa555550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000002a13112a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000025555aaa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000000025131a250000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000255555550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000002a1311250000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000002aaa55550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000000002a6666250000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __label__
 ccc0cc00ccc0ccc00cc0c0c00000ccc0c0c0000000000000000000000000000000000000000000000000000000ccc00cc0c0c0ccc00cc00000ccc00000000000
 c000c0c0c000c0c0c000c0c00000c0c000c0000000000000000000000000000000000000000000000000000000ccc0c0c0c0c0c000c0000000c0c00000000000
@@ -856,7 +877,7 @@ ccc0c0c0ccc0c0c0ccc0ccc00000ccc0c0c000000000000000000000000000000000000000000000
 25666625256666252566662525666625256666252566662525666625256666252566662525666625256666252566662525666625256666252566662525666625
 
 __gff__
-0001000002020202020200000000000000050900010010141800000000000000000100000000242800000000000000000001000000002400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0001000102020202020200000000000000050900010010141800000000000000000100000000242800000000000000000001000000002400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
