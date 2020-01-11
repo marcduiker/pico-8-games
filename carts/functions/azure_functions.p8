@@ -6,6 +6,7 @@ __lua__
 
 local _upd
 local _drw
+local _timer
 local player
 local menu
 local game_map
@@ -21,10 +22,14 @@ function _init()
 	init_bugs(levels[1])
 	_upd=menu.update
 	_drw=menu.draw
+	_tplayer=0
+	_tmap=0
 end
 
 function _update()
  _upd()
+ _tplayer+=1
+ _tmap+=1
 end
 
 function _draw()
@@ -39,7 +44,8 @@ local map_tiles={
 	floor=16,
 	server_off=17,
 	server_red=18,
-	server_green=33,
+	server_green1=33,
+	server_green2=34,
 	end_tile=24,
 	open_door=36
 }
@@ -61,7 +67,8 @@ local bug1={x=nil,y=nil,dir=nil,tile=nill}
 local bug2={x=nil,y=nil,dir=nil,tile=nill}
 local bug3={x=nil,y=nil,dir=nil,tile=nill}
 
-local bugs={bug1, bug2, bug3}
+local bugs={bug1,bug2,bug3}
+local bugs_anim={38,39,40,41}
 
 function init_bugs(level)
 	bug1.x=level.bug1_x
@@ -87,25 +94,19 @@ function init_map(level)
 		level=level.id,
 		target_energy=100,
 		total_servers=level.total_servers,
-		server_timer=0,
-		bug_timer=0,
-		server_anim_time=30,
-		bug_anim_time=15
+		server_anim_speed=30,
+		bug_anim_speed=15
 	}
 end
 
 function update_gamemap()
-			if game_map.server_timer<0 then
-				animate_tiles()
-				game_map.server_timer=game_map.server_anim_time
-			end
-			if game_map.bug_timer<0 and not player:is_dialog_state() then
-				move_bugs()
-				game_map.bug_timer=game_map.bug_anim_time		
-			end
-			game_map.server_timer-=1
-			game_map.bug_timer-=1
-		end
+	if _tmap%game_map.server_anim_speed==0 then
+		animate_tiles()
+	end
+	if _tmap%game_map.bug_anim_speed==0 and not player:is_dialog_state() then
+			move_bugs()
+	end
+end
 
 function move_bugs()
 	for bug in all(bugs) do
@@ -150,13 +151,14 @@ function update_servers(energy)
 	for y=game_map.y,game_map.y+15 do
 		for x=game_map.x,game_map.x+15 do
 			-- first count current green
-			if mget(x,y)==map_tiles.server_green then
+			local tile=mget(x,y)
+			if tile==map_tiles.server_green1 or tile==map_tiles.server_green2 then
 				green_server_count+=1
 			end
 			-- then update non-green servers
 			if (green_server_count<servers_to_make_green) then
 				if(is_to_be_made_green(x,y)) then
-					mset(x,y,map_tiles.server_green)
+					mset(x,y,map_tiles.server_green1)
 					green_server_count+=1
 				end
 			end
@@ -216,18 +218,16 @@ function swap_tiles(x,y)
 	mset(x,y,tile+1)
 end
 
-local collectables={}
-
 function swap_tiles_with(bug,x2,y2)
 	local tile=mget(bug.x,bug.y)
 	mset(bug.x,bug.y,bug.tile)
 	bug.tile=mget(x2,y2)
-	if is_anim_state_1_tile(tile) then
-		swap_tiles(x2,y2)
-	elseif is_anim_state_2_tile(tile) then
-		unswap_tiles(x2,y2)
-	end
-	mset(x2,y2,tile)
+	mset(x2,y2,anim_tile(bugs_anim,game_map.bug_anim_speed))
+end
+
+function anim_tile(anim,speed)
+	local index=flr(_tmap/speed%#anim)+1
+	return anim[index]
 end
 
 function unswap_tiles(x,y)
@@ -255,9 +255,14 @@ end
 local step = 1
 local score_incr=10
 local sprites={
-	normal=1,
-	special=2,
-	shadow=3
+	flash=1,
+	brackets=2
+}
+
+local collected=
+{
+	x=nil,
+	y=nil
 }
 
 sounds={
@@ -271,76 +276,68 @@ sounds={
 }
 
 local picked_up={}
-local shadow_x={8,-8,0,0}
-local shadow_y={0,0,8,-8}
+local shadow_x={1,-1,0,0}
+local shadow_y={0,0,1,-1}
+local bracket_anim={2,3}
+local col_sizes={8,6,4,2}
 
 function init_player(level)
-	
 	player = {
 		x=level.player_x,
 		y=level.player_y,
-		shadow_x_pix=0,
-		shadow_y_pix=0,
+		shadow_x_pix=level.player_x*8,
+		shadow_y_pix=level.player_y*8,
 		direction=nil,
 		normal=true,
 		score=0,
 		moves=0,
-		shadow_timer=0,
-		shadow_anim_time=8,
 		false_moves=0,
 		avocado_toggle=false,
 		level_start=true,
 		false_move_toggle=false,
 		level_complete_toggle=false,
 		game_over_toggle=false,
-
-				
-		move_shadow=function(self)
-			if self.shadow_timer < 0 then
-				for delta=1,8 do
-					self.shadow_x_pix=self.x*8+(shadow_x[self.direction+1]/delta)
-					self.shadow_y_pix=self.y*8+(shadow_y[self.direction+1]/delta)
-				end
-				self.shadow_anim_time=self.shadow_anim_time
-			end
-			self.shadow_timer-=1
-		end,
-
-		
 		
 		is_dialog_state=function(self)
 			return self.avocado_toggle or self.false_move_toggle or self.level_complete_toggle or self.level_start or self.game_over_toggle
 		end,
-		
 	}
 end
 
 function update_player()
 			update_gamemap()
+			current_level=levels[game_map.level]
 			local new_x=player.x
 			local new_y=player.y
 			local old_x=player.x
 			local old_y=player.y
-			player.shadow_anim_time=0
 			if (btnp(⬅️) and not player:is_dialog_state()) then 
+				_tplayer=0
 				new_x-=step
 				player.direction=0
 				player.moves+=1
+				_upd=update_shadow
 			end
 			if (btnp(➡️) and not player:is_dialog_state()) then 
+				_tplayer=0
 				new_x+=step
 				player.direction=1
-				player.moves+=1 
+				player.moves+=1
+				_upd=update_shadow
 			end
 			if (btnp(⬆️) and not player:is_dialog_state()) then 
+				_tplayer=0
 				new_y-=step
 				player.direction=2
-				player.moves+=1 
+				player.moves+=1
+				_upd=update_shadow
 			end
 			if (btnp(⬇️) and not player:is_dialog_state()) then 
+				_tplayer=0
 				new_y+=step
 				player.direction=3
 				player.moves+=1 
+				_upd=update_shadow
 			end
 			
 			if can_move(new_x, new_y) then
@@ -349,7 +346,6 @@ function update_player()
 				if old_x!=player.x or old_y!=player.y then
 					play_move_sound()
 					player.false_moves=0
-					player:move_shadow()
 				end
 			else
 				play_bump_sound()
@@ -366,6 +362,8 @@ function update_player()
 				play_pickup_sound()
 				player.score+=score_incr
 				update_servers(player.score)
+				collected.x=player.x*8+3
+				collected.y=player.y*8+3
 				if (player.score==game_map.target_energy) then
 					open_door()
 				end
@@ -409,69 +407,70 @@ function update_player()
 						-- game completed
 						_upd=update_end_game
 						_drw=draw_end_game
-						--game.=states.end_game
 					end
 				end
 			end
-			
-			if (btnp(❎)) then 
-				if (not self.normal) then
-					self.normal=true
-				else
-					self.normal=false 
-				end
-				self:play_special_sound()
-				end
+end
+
+function anim_move(size)
+	return size-1-flr(_tplayer%size)
+end
+
+function anim_player(anim,speed)
+	local index=flr(_tplayer/speed%#anim)+1
+	return anim[index]
+end
+
+function update_shadow()
+	update_gamemap()
+	local delta=anim_move(5)
+	player.shadow_x_pix=player.x*8+flr(shadow_x[player.direction+1]*delta)
+	player.shadow_y_pix=player.y*8+flr(shadow_y[player.direction+1]*delta)
+	if delta==0 then
+		_upd=update_player
+	end
 end
 
 function draw_player()
-			map(0,0,0,0,80,16)
-			local current_level=levels[game_map.level]
-			camera(current_level.camera_x,current_level.camera_y)
-			--sprite
-			local spr_id
-			if (player.normal) then
-				spr_id=sprites.normal
-			else
-				spr_id=sprites.special
-			end
-			spr(spr_id,player.x*8,player.y*8)
+	map(0,0,0,0,80,16)
+	local current_level=levels[game_map.level]
+	camera(current_level.camera_x,current_level.camera_y)
+	spr(sprites.flash,player.x*8,player.y*8)
+	spr(anim_player(bracket_anim,8),player.shadow_x_pix,player.shadow_y_pix)
+	if (player.level_start) then
+		if (game_map.level==1) then
+			show_level_1_start_text()
+		else
+			show_level_start_text()
+		end
+	end
+	
+	--if (collected.x!=nil) then
+	--	circ(collected.x,collected.y,8,7)
+	--end
+				
+	if (player.avocado_toggle) then
+		show_avocado_text()
+	end
+				
+	if (player.game_over_toggle) then
+		show_game_over_text()
+	end
+				
+	if (player.false_move_toggle) then
+		show_bumping_text()
+	end
 			
-			--if (self.shadow_x_pix != nil) then
-				spr(sprites.shadow,player.shadow_x_pix,player.shadow_y_pix)
-			--end
-
-			if (player.level_start) then
-				if (game_map.level==1) then
-					show_level_1_start_text()
-				else
-					show_level_start_text()
-				end
-			end
-				
-			if (player.avocado_toggle) then
-				show_avocado_text()
-			end
-				
-			if (player.game_over_toggle) then
-				show_game_over_text()
-			end
-				
-			if (player.false_move_toggle) then
-				show_bumping_text()
-			end
-			
-			if (player.level_complete_toggle) then
-				show_level_end_text()
-			end
-			--score
-			print("energy "..player.score.."%",game_map.pix_x,game_map.pix_y,12)
-			print("moves "..player.moves,game_map.pix_x+90,game_map.pix_y,12)
-			-- debugging
-			print(player.shadow_x_pix.." "..player.shadow_y_pix, game_map.pix_x,game_map.y+10,10)
-			print(player.shadow_anim_time, game_map.pix_x,game_map.pix_y+18,10)
+	if (player.level_complete_toggle) then
+		show_level_end_text()
+	end
+	--score
+	print("energy "..player.score.."%",game_map.pix_x,game_map.pix_y,12)
+	print("moves "..player.moves,game_map.pix_x+90,game_map.pix_y,12)
+	-- debugging
+	--print(player.shadow_x_pix.." "..player.shadow_y_pix, game_map.pix_x,game_map.y+10,10)
+	--print(anim_move(8),game_map.pix_x,game_map.pix_y+18,10)
 end
-
 
 function is_avocado_fan()
 	if (#picked_up>=3) then
@@ -495,7 +494,7 @@ function init_menu()
 			end
 		end,
 		
-		draw=function(self)
+		draw=function()
 			map(0,16,0,0,16,16)
 			print("azure functions",34,24,12)
 			print("the game",48,36,10)
@@ -714,14 +713,14 @@ function play_special_sound()
 		sfx(sfx_id,0,0)
 end
 __gfx__
-000000000009a000a00a700a0009a000666666666688886666666666666336666666666668868876000000000000000000000000000000000000000000000000
-070000700019a1000a1a71a00009a000888733366899998666c76666663bb3666116611688888887000000000000000000000000000000000000000000000000
-007007000109a010010a70100009a0008887333689aaaa986ccc7666663bb3666166661688888887000000000000000000000000000000000000000000000000
-0007700010009a011000a70100009a00888733369abbbba9c7cccc7663bbbb36616cc61688888887000000000000000000000000000000000000000000000000
-00077000c0009a0cc000a70c00009a0077777776abccccbacc7c7cc763b44b361666666188888887000000000000000000000000000000000000000000000000
-007007000c09a0c00c0a70c00009a000ccc79996bc2222cbccccc7cc63b44b36616cc61668888876000000000000000000000000000000000000000000000000
-0700007000c90c000aca0ca000090000ccc79996c266662c6cccccc663bbbb366166661666888766000000000000000000000000000000000000000000000000
-0000000000090000a00a000a00090000ccc799962666666266666666663333666116611666687666000000000000000000000000000000000000000000000000
+000000000009a0000000000000000000888733366688886666666666666336666116611668868876000000000000000000000000000000000000000000000000
+070000700009a0000010010001000010888733366899998666c76666663bb3666166661688888887000000000000000000000000000000000000000000000000
+007007000009a00001000010100000018887333689aaaa986ccc7666663bb366616cc61688888887000000000000000000000000000000000000000000000000
+0007700000009a001000000110000001777777769abbbba9c7cccc7663bbbb361666666188888887000000000000000000000000000000000000000000000000
+0007700000009a00c000000cc000000cccc79996abccccbacc7c7cc763b44b36616cc61688888887000000000000000000000000000000000000000000000000
+007007000009a0000c0000c0c000000cccc79996bc2222cbccccc7cc63b44b366166661668888876000000000000000000000000000000000000000000000000
+070000700009000000c00c000c0000c0ccc79996c266662c6cccccc663bbbb366116611666888766000000000000000000000000000000000000000000000000
+00000000000900000000000000000000666666662666666266666666663333666666666666687666000000000000000000000000000000000000000000000000
 66666666255555552555555500000000888888880000000063333336633333366333333600000000000000000000000000000000000000000000000000000000
 6666666625112125251181250000000085555558000000003333333333333333333bb33300000000000000000000000000000000000000000000000000000000
 6666666625555555255555550000000085cccc5800000000333333333333333333bbbb3300000000000000000000000000000000000000000000000000000000
@@ -730,14 +729,14 @@ __gfx__
 666666662511212525118125000000008555565800000000333333333333333333bbbb3300000000000000000000000000000000000000000000000000000000
 6666666625555555255555550000000085555558000000003333333333333333333bb33300000000000000000000000000000000000000000000000000000000
 66666666256666252566662500000000855555580000000063333336633333366333333600000000000000000000000000000000000000000000000000000000
-00000000255555550000000000000000333333330000000063333336633333360000000000000000000000000000000000000000000000000000000000000000
-0000000025b311250000000000000000366666630000000063555539935555360000000000000000000000000000000000000000000000000000000000000000
-000000002555555500000000000000003666666300000000993aa399993883990000000000000000000000000000000000000000000000000000000000000000
-00000000253b112500000000000000003666666300000000933aa336633883390000000000000000000000000000000000000000000000000000000000000000
-00000000255555550000000000000000366666630000000063333339933333360000000000000000000000000000000000000000000000000000000000000000
-0000000025b311250000000000000000366666630000000099344399993443990000000000000000000000000000000000000000000000000000000000000000
-00000000255555550000000000000000366666630000000093933936639339390000000000000000000000000000000000000000000000000000000000000000
-00000000256666250000000000000000366666630000000066966966669669660000000000000000000000000000000000000000000000000000000000000000
+00000000255555552555555500000000333333330000000063566536356666536356653635666653000000000000000000000000000000000000000000000000
+0000000025b31125253b112500000000366666630000000063555539635555369355553663555536000000000000000000000000000000000000000000000000
+000000002555555525555555000000003666666300000000993aa39999388399993aa39999388399000000000000000000000000000000000000000000000000
+00000000253b112525b31125000000003666666300000000933aa33663388336633aa33963388336000000000000000000000000000000000000000000000000
+00000000255555552555555500000000366666630000000063333339633333369333333663333336000000000000000000000000000000000000000000000000
+0000000025b31125253b112500000000366666630000000099344399993443999934439999344399000000000000000000000000000000000000000000000000
+00000000255555552555555500000000366666630000000093933936639339366393393963933936000000000000000000000000000000000000000000000000
+00000000256666252566662500000000366666630000000066966966669669666696696666966966000000000000000000000000000000000000000000000000
 000000002aa555550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 000000002a13112a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000025555aaa0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
@@ -877,7 +876,7 @@ ccc0c0c0ccc0c0c0ccc0ccc00000ccc0c0c000000000000000000000000000000000000000000000
 25666625256666252566662525666625256666252566662525666625256666252566662525666625256666252566662525666625256666252566662525666625
 
 __gff__
-0001000102020202020200000000000000050900010010141800000000000000000100000000242800000000000000000001000000002400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0001010102020202020200000000000000050900010010141800000000000000000509000000202820200000000000000001000000002400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
