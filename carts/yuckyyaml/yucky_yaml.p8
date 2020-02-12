@@ -9,9 +9,9 @@ local _drw
 local _t
 local _spd
 local p
-local w1={x=1,y=1,s=1,c=17,d=0}
-local w2={x=2,y=1,s=1,c=18,d=0}
-local w3={x=2,y=1,s=1,c=19,d=0}
+local w1={x=7,y=7,s=1,c=17,d=0}
+local w2={x=7,y=8,s=1,c=18,d=0}
+local w3={x=8,y=7,s=1,c=19,d=0}
 local whales={w1,w2,w3}
 local new_x
 local new_y
@@ -21,6 +21,7 @@ local old_y
 function _init()
 	_t=0
 	_spd=3
+	_init_levels()
 	_init_cards()
 	_upd=_update_cards
 	_drw=_draw_cards
@@ -219,6 +220,11 @@ function anim_tiles()
 		end
 	end
 end
+
+function _draw_whale(w)
+	spr(w.s,w.x*8,w.y*8,1,1)
+	spr(w.c,w.x*8,w.y*8,1,1)
+end
 -->8
 -- cards
 
@@ -234,7 +240,7 @@ local row_old
 local col_old
 local row_new
 local col_new
-local card_h={col=0,row=0,hi=0,prev=0}
+local card_h={col=2,row=13,hi=96,prev=64}
 local card_new=0
 local row_select={x=1,y=rows[1],xsize=10,ysize=1}
 local col_select={x=cols[1],y=12,xsize=1,ysize=4}
@@ -248,7 +254,7 @@ end
 
 function _update_cards()
 	-- only set old when has_moved==true?
-	
+	update_whale_sprites()
 	--row_new=row_old
 	--col_new=col_old
 	if btnp(⬅️) then
@@ -261,6 +267,7 @@ function _update_cards()
 		row_new+=1
 	elseif btnp(🅾️) then
 		-- change card
+		change_card()
 	elseif btnp(❎) then
 		-- start run
 	end
@@ -273,6 +280,11 @@ function _update_cards()
 	end
 end
 
+function update_whale_sprites()
+	w1.s=anim_item(wh_spr,wh_spd)
+	w2.s=anim_item(wh_spr,wh_spd)
+	w3.s=anim_item(wh_spr,wh_spd)
+end
 
 function update_row_col()
 	if row_new<rows[1] then row_new=rows[3]
@@ -305,12 +317,24 @@ function highlight()
 		card_h.row=row_new
 		card_h.hi=card_new
 		card_h.prev=card_act
+	end	
+end
+
+function change_card()
+	card_h.hi+=1
+	if card_h.hi>cards_spr_high[5] then
+		card_h.hi=cards_spr_high[1]
+	elseif card_h.hi<cards_spr_high[1] then
+	 card_h.hi=cards_spr_high[5]
 	end
-	
+	local i=get_index(card_h.hi,cards_spr_high)
+	card_h.prev=cards_spr_toplay[i]
+	mset(card_h.col,card_h.row,card_h.hi)
 end
 
 function _draw_cards()
 	draw_debug()
+	draw_whales()
 	
 	print("program the whales 🅾️ and go ❎!",1,90,7)
 	rect(
@@ -328,12 +352,18 @@ function _draw_cards()
 	-- col: rect(2*8,12*8,3*8,16*8-1,9)
 end
 
+function draw_whales()
+	_draw_whale(w1)
+	_draw_whale(w2)
+	_draw_whale(w3)
+end
+
 function draw_debug()
-	rectfill(0,0,80,30,0)
-	rect(0,0,80,30,7)
-	print("new "..row_new.."-"..col_new,1,1,8)
-	print("old "..row_old.."-"..col_old,1,8,8)
-	print("card_h "..card_h.col.."-"..card_h.row.."-"..card_h.hi.."-"..card_h.prev,1,16,8)
+	--rectfill(0,0,80,30,0)
+	--rect(0,0,80,30,7)
+	--print("new "..row_new.."-"..col_new,1,1,8)
+	--print("old "..row_old.."-"..col_old,1,8,8)
+	print("card_h "..card_h.col.."-"..card_h.row.."-"..card_h.hi.."-"..card_h.prev,1,1,8)
 end
 -->8
 -- menu
@@ -441,149 +471,23 @@ function draw_text_box()
 end
 -->8
 -- levels
+local levels={}
 
 local level_1={
 	id=1,
-	camera_x=16*8*0,
-	camera_y=0,
-	player_x=6,
-	player_y=5,
+	w1_x=0,
+	w1_y=0,
+	w2_x=0,
+	w2_y=0,
+	w3_x=0,
+	w3_y=0,
 	map_x=0,
 	map_y=0,
-	bug1_x=13,
-	bug1_y=4,
-	bug1_dir=0,
-	bug2_x=2,
-	bug2_y=7,
-	bug2_dir=3,
-	bug3_x=10,
-	bug3_y=12,
-	bug3_dir=1
 }
 
-local level_2={
-	id=2,
-	camera_x=16*8*1,
-	camera_y=0,
-	player_x=24,
-	player_y=6,
-	map_x=16,
-	map_y=0,
-	bug1_x=27,
-	bug1_y=5,
-	bug1_dir=0,
-	bug2_x=23,
-	bug2_y=9,
-	bug2_dir=2,
-	bug3_x=26,
-	bug3_y=11,
-	bug3_dir=1
-}
-
-local level_3={
-	id=3,
-	camera_x=16*8*2,
-	camera_y=0,
-	player_x=38,
-	player_y=2,
-	map_x=32,
-	map_y=0,
-	bug1_x=35,
-	bug1_y=5,
-	bug1_dir=0,
-	bug2_x=45,
-	bug2_y=7,
-	bug2_dir=2,
-	bug3_x=39,
-	bug3_y=9,
-	bug3_dir=1
-}
-
-local level_4={
-	id=4,
-	camera_x=16*8*3,
-	camera_y=0,
-	player_x=59,
-	player_y=13,
-	map_x=48,
-	map_y=0,
-	bug1_x=57,
-	bug1_y=5,
-	bug1_dir=3,
-	bug2_x=52,
-	bug2_y=7,
-	bug2_dir=3,
-	bug3_x=62,
-	bug3_y=10,
-	bug3_dir=2
-}
-
-local level_5={
-	id=5,
-	camera_x=16*8*4,
-	camera_y=0,
-	player_x=65,
-	player_y=3,
-	map_x=64,
-	map_y=0,
-	bug1_x=75,
-	bug1_y=3,
-	bug1_dir=0,
-	bug2_x=71,
-	bug2_y=10,
-	bug2_dir=1,
-	bug3_x=71,
-	bug3_y=12,
-	bug3_dir=0
-}
-
-local level_6={
-	id=6,
-	camera_x=16*8*5,
-	camera_y=0,
-	player_x=81,
-	player_y=2,
-	map_x=80,
-	map_y=0,
-	bug1_x=87,
-	bug1_y=2,
-	bug1_dir=0,
-	bug2_x=90,
-	bug2_y=08,
-	bug2_dir=0,
-	bug3_x=86,
-	bug3_y=14,
-	bug3_dir=1
-}
-
-local level_7={
-	id=7,
-	camera_x=16*8*6,
-	camera_y=0,
-	player_x=97,
-	player_y=2,
-	map_x=96,
-	map_y=0,
-	bug1_x=108,
-	bug1_y=8,
-	bug1_dir=2,
-	bug2_x=109,
-	bug2_y=08,
-	bug2_dir=0,
-	bug3_x=110,
-	bug3_y=08,
-	bug3_dir=2
-}
-
-function init_levels()
+function _init_levels()
 	levels={
 		level_1,
-		level_2,
-		level_3,
-		level_4,
-		level_5,
-		level_6,
-		level_7
 		}
 end
 -->8
@@ -825,8 +729,8 @@ __map__
 0606060606060606060606060606060611101110100611101011101010111011111011111010101010101011161110111110101110101011111110101110261111101010101010261010101010100511111110101011101110111611101110101110101010111010101010101010101100000000000000000000000000000000
 6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f11101110101011101011261610111011111011111010101010101014101110111110101011101011111010111010101111111111111111111111111110111411111110101011101110111111101111101110101010101111111111071010101100000000000000000000000000000000
 6f6f464748494a4b4c4d4e6f6f6f6f6f11101107101011101011101010111011111011071010101111111111111110111110101011101011111010111010101111081010101010261010101010111011111110101011101110111110101110101110111010101010101010100611101100000000000000000000000000000000
-2b7653535353535252535055696a6b6c11101111111011101011141111111011111011101011111111111111111110111110101006101011101010101010101111111110111111111111111111111011110511111010111010110711101111111110111111111111111111111111101100000000000000000000000000000000
-3b6741414343424240404045797a7b7c11101010101010101010101010100911110610101010101010100510101010111110101010101007101010101010101111051010101010101010101009111611111010101010261010101010101009111110101010101010101010101010051100000000000000000000000000000000
+2b7640404040404040404045696a6b6c11101111111011101011141111111011111011101011111111111111111110111110101006101011101010101010101111111110111111111111111111111011110511111010111010110711101111111110111111111111111111111111101100000000000000000000000000000000
+3b6740404040404040404045797a7b7c11101010101010101010101010100911110610101010101010100510101010111110101010101007101010101010101111051010101010101010101009111611111010101010261010101010101009111110101010101010101010101010051100000000000000000000000000000000
 2d68404040404040404040456f6f6f6f11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000
 3400340034003400340034003400340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
