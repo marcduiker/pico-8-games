@@ -13,10 +13,11 @@ local game_map
 local end_game
 local levels
 local level_id
-local game_maps={}
+local game_maps
 
 function _init()
 	music(0,1)
+	game_maps={}
 	init_menu()
 	init_levels()
 	level_id=1
@@ -27,7 +28,6 @@ function _init()
 	_drw=menu.draw
 	_tplayer=0
 	_tmap=0
-	
 end
 
 function _update()
@@ -124,7 +124,7 @@ function update_gamemap()
 		animate_tiles()
 	end
 	if _tmap%game_maps[level_id].bug_anim_speed==0 and not is_dialog_state(player) then
-			move_bugs()
+		move_bugs()
 	end
 end
 
@@ -310,7 +310,7 @@ sounds={
 	game_over=6
 }
 
-local picked_up={}
+local picked_up
 local shadow_x={1,-1,0,0}
 local shadow_y={0,0,1,-1}
 local bracket_anim={2,3}
@@ -333,113 +333,122 @@ function init_player(level)
 		level_complete_toggle=false,
 		game_over_toggle=false
 	}
+	picked_up={}
 end
 
 function update_player()
-			update_gamemap()
-			current_level=levels[level_id]
-			local new_x=player.x
-			local new_y=player.y
-			local old_x=player.x
-			local old_y=player.y
-			if (btnp(⬅️) and not is_dialog_state(player)) then 
-				_tplayer=0
-				new_x-=step
-				player.direction=0
-				player.moves+=1
-				_upd=update_shadow
-			end
-			if (btnp(➡️) and not is_dialog_state(player)) then 
-				_tplayer=0
-				new_x+=step
-				player.direction=1
-				player.moves+=1
-				_upd=update_shadow
-			end
-			if (btnp(⬆️) and not is_dialog_state(player)) then 
-				_tplayer=0
-				new_y-=step
-				player.direction=2
-				player.moves+=1
-				_upd=update_shadow
-			end
-			if (btnp(⬇️) and not is_dialog_state(player)) then 
-				_tplayer=0
-				new_y+=step
-				player.direction=3
-				player.moves+=1 
-				_upd=update_shadow
-			end
-			
-			if can_move(new_x, new_y) then
-				player.x=new_x
-				player.y=new_y
-				if old_x!=player.x or old_y!=player.y then
-					play_move_sound()
-					player.false_moves=0
-				end
+	update_gamemap()
+	current_level=levels[level_id]
+	local new_x=player.x
+	local new_y=player.y
+	local old_x=player.x
+	local old_y=player.y
+	if (btnp(⬅️) and not is_dialog_state(player)) then 
+		_tplayer=0
+		new_x-=step
+		player.direction=0
+		player.moves+=1
+		_upd=update_shadow
+	end
+	if (btnp(➡️) and not is_dialog_state(player)) then 
+		_tplayer=0
+		new_x+=step
+		player.direction=1
+		player.moves+=1
+		_upd=update_shadow
+	end
+	if (btnp(⬆️) and not is_dialog_state(player)) then 
+		_tplayer=0
+		new_y-=step
+		player.direction=2
+		player.moves+=1
+		_upd=update_shadow
+	end
+	if (btnp(⬇️) and not is_dialog_state(player)) then 
+		_tplayer=0
+		new_y+=step
+		player.direction=3
+		player.moves+=1 
+		_upd=update_shadow
+	end
+	
+	if can_move(new_x, new_y) then
+		player.x=new_x
+		player.y=new_y
+		if old_x!=player.x or old_y!=player.y then
+			play_move_sound()
+			player.false_moves=0
+		end
+	else
+		play_bump_sound()
+		player.false_moves+=1
+		if (player.false_moves > 10) then
+			player.false_move_toggle=true
+			player.dailog_state=true
+		end
+	end
+	
+	if (is_collectable(player.x,player.y)) then
+		add(picked_up,mget(player.x,player.y))
+		remove_item(player.x, player.y)
+		play_pickup_sound()
+		player.score+=score_incr
+		update_servers(player.score)
+		needs_circle_draw=true
+		if (player.score==game_maps[level_id].target_energy) then
+			open_door()
+		end
+		if (is_avocado_fan()) then
+		player.avocado_toggle=true
+		end
+	elseif (is_bug(player.x,player.y)) then
+		if (not player.game_over_toggle) then
+			play_gameover_sound()
+		end
+		needs_circle_draw=true
+		player.game_over_toggle=true
+	end
+	
+	if (is_end_tile(player.x,player.y)) then
+		player.level_complete_toggle=true
+	end
+	
+	if (btnp(🅾️)) then
+		if (player.avocado_toggle) then
+			player.avocado_toggle=false
+		end
+		if (player.level_start) then
+			player.level_start=false
+		end
+		if (player.false_move_toggle) then
+			player.false_move_toggle=false
+			player.false_moves=0
+		end
+		if (player.game_over_toggle) then
+			player.game_over_toggle=false
+			extcmd("reset")
+		end
+		if (player.level_complete_toggle) then
+			if (game_maps[level_id].level<#levels) then
+				-- move to next level
+				level_id=game_maps[level_id].level+1
+				init_bugs(levels[level_id])
+				init_player(levels[level_id])
 			else
-				play_bump_sound()
-				player.false_moves+=1
-				if (player.false_moves > 10) then
-					player.false_move_toggle=true
-					player.dailog_state=true
-				end
+				-- game completed
+				_upd=update_end_game
+				_drw=draw_end_game
 			end
-			
-			if (is_collectable(player.x,player.y)) then
-				add(picked_up,mget(player.x,player.y))
-				remove_item(player.x, player.y)
-				play_pickup_sound()
-				player.score+=score_incr
-				update_servers(player.score)
-				needs_circle_draw=true
-				if (player.score==game_maps[level_id].target_energy) then
-					open_door()
-				end
-				if (is_avocado_fan()) then
-				player.avocado_toggle=true
-				end
-			elseif (is_bug(player.x,player.y)) then
-				if (not player.game_over_toggle) then
-					play_gameover_sound()
-				end
-				needs_circle_draw=true
-				player.game_over_toggle=true
-			end
-			
-			if (is_end_tile(player.x,player.y)) then
-				player.level_complete_toggle=true
-			end
-			
-			if (btnp(🅾️)) then
-				if (player.avocado_toggle) then
-					player.avocado_toggle=false
-				end
-				if (player.level_start) then
-					player.level_start=false
-				end
-				if (player.false_move_toggle) then
-					player.false_move_toggle=false
-					player.false_moves=0
-				end
-				if (player.game_over_toggle) then
-					player.game_over_toggle=false
-					extcmd("reset")
-				end
-				if (player.level_complete_toggle) then
-					if (game_maps[level_id].level<#levels) then
-						-- move to next level
-						level_id=game_maps[level_id].level+1
-						init_bugs(levels[level_id])
-						init_player(levels[level_id])
-					else
-						-- game completed
-						_upd=update_end_game
-						_drw=draw_end_game
-					end
-				end
-			end
+		end
+	end
+end
+
+function restart()
+	game_maps={}
+	init_maps()
+	init_bugs(levels[level_id])
+	init_player(levels[level_id])
+	update_gamemap()
 end
 
 function anim_move(size)
@@ -496,7 +505,7 @@ function draw_player()
 		show_level_end_text()
 	end
 	--score
-	print("energy "..player.score.."%",game_maps[level_id].pix_x,game_maps[level_id].pix_y,12)
+	print("power "..player.score.."%",game_maps[level_id].pix_x,game_maps[level_id].pix_y,12)
 	print("moves "..player.moves,game_maps[level_id].pix_x+90,game_maps[level_id].pix_y,12)
 	-- debugging
 	--print(game_maps[level_id].door_tile_x,game_maps[level_id].pix_x,game_maps[level_id].y+10,10)
@@ -541,7 +550,7 @@ function init_menu()
 			map(0,16,0,0,16,16)
 			print("azure functions",34,24,12)
 			print("the game",48,36,10)
-			print("v0.7",56,48,5)
+			print("v0.8",56,48,5)
 			print("press ❎/x to play",28,68,9)
 			print("created by",44,92,7)
 			print("marc duiker",42,100,7)
@@ -555,31 +564,31 @@ local mark_anim={12,14}
 local anim_speed=8
 
 function update_end_game()
-			if btnp(❎) then
-				extcmd("reset")
-			end
+	if btnp(❎) then
+		extcmd("reset")
+	end
 end
 
 function draw_end_game()
-			camera()
-			map(0,16,0,0,16,16)
-			rect(0,14,127,56,6)
-			spr(anim_player(mark_anim,anim_speed),0,18,2,3)
-			local left_txt=18
-			print("yeah! you made it!",left_txt,18,7)
-			print("i'm mark russinovich, thank",left_txt,24,7)
-			print("you so much for saving this",left_txt,30,7)
-			print("datacenter with the help of",left_txt,36,7)
-			print("azure functions. they are",left_txt,42,7)
-			print("so powerful, right?!",left_txt,48,7)
-			
-			print("press ❎/x to restart",24,68,9)
-			print("created by",44,84,7)
-			print("marc duiker ",42,92,7)
-			print("i",34,108,7)
-			print("♥",42,108,8)
-			print("serverless",52,108,7)
-		end
+	camera()
+	map(0,16,0,0,16,16)
+	rect(0,14,127,56,6)
+	spr(anim_player(mark_anim,anim_speed),0,18,2,3)
+	local left_txt=18
+	print("yeah! you made it!",left_txt,18,7)
+	print("i'm mark russinovich, thank",left_txt,24,7)
+	print("you so much for saving this",left_txt,30,7)
+	print("datacenter with the help of",left_txt,36,7)
+	print("azure functions. they are",left_txt,42,7)
+	print("so powerful, right?!",left_txt,48,7)
+	
+	print("press ❎/x to restart",24,68,9)
+	print("created by",44,84,7)
+	print("marc duiker ",42,92,7)
+	print("i",34,108,7)
+	print("♥",42,108,8)
+	print("serverless",52,108,7)
+end
 
 -->8
 -- texts
@@ -607,6 +616,7 @@ function show_game_over_text()
 	draw_text_box()
 	print(" --= game over =--",game_maps[level_id].pix_x+x1+xpadding+24,game_maps[level_id].pix_y+54,7)
 	print("watch out for those bugs!",game_maps[level_id].pix_x+x1+xpadding+14,game_maps[level_id].pix_y+68,7)
+	--print("this level will be restarted.",game_maps[level_id].pix_x+x1+xpadding+4,game_maps[level_id].pix_y+70,7)
 end
 
 function show_avocado_text()
