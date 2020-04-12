@@ -9,10 +9,19 @@ local _drw
 local _t
 local _spd
 local p
-local w1={x=7,y=7,s=1,c=17,d=0}
-local w2={x=7,y=8,s=1,c=18,d=0}
-local w3={x=8,y=7,s=1,c=19,d=0}
-local whales={w1,w2,w3}
+local whale_colors={17,18,19}
+local whale1={x=nil,y=nil,s=1,c=whale_colors[1],d=0}
+local whale2={x=nil,y=nil,s=1,c=whale_colors[2],d=0}
+local whale3={x=nil,y=nil,s=1,c=whale_colors[3],d=0}
+local whales={whale1,whale2,whale3}
+local container_tiles={43,59,45}
+local end_tiles={44,60,46}
+local container_y={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[1],tile_end=end_tiles[1]}
+local container_g={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[2],tile_end=end_tiles[2]}
+local container_r={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[3],tile_end=end_tiles[3]}
+local containers={}
+local levels={}
+local current_level={}
 local new_x
 local new_y
 local old_x
@@ -22,10 +31,9 @@ function _init()
 	_t=0
 	_spd=3
 	_init_levels()
-	_init_cards()
-	_upd=_update_cards
-	_drw=_draw_cards
-	p=w1
+	current_level=levels[1]
+	_upd=_upd_init_level
+	_drw=_drw_init_level
 end
 
 function _update()
@@ -38,6 +46,63 @@ function _draw()
  cls()
  map(0,0,0,0,16,16)
  _drw()
+end
+
+function _init_levels()
+	levels={
+		level_1,
+		}
+end
+
+function init_whales(level)
+	whale1.x=level.whale1_x
+	whale1.y=level.whale1_y
+	whale2.x=level.whale2_x
+	whale2.y=level.whale2_y
+	whale3.x=level.whale3_x
+	whale3.y=level.whale3_y
+end
+
+function init_containers(level)
+	-- start position containers
+	container_y.x=level.cy_start_x
+	container_y.y=level.cy_start_y
+	container_g.x=level.cg_start_x
+	container_g.y=level.cg_start_y
+	container_r.x=level.cr_start_x
+	container_r.y=level.cr_start_y
+
+	-- end position containers
+	container_y.x_end=level.cy_end_x
+	container_y.y_end=level.cy_end_y
+	container_g.x_end=level.cg_end_x
+	container_g.y_end=level.cg_end_y
+	container_r.x_end=level.cr_end_x
+	container_r.y_end=level.cr_end_y
+
+	containers={container_y,container_g,container_r}
+end
+
+function _upd_init_level()
+	init_whales(current_level)
+	init_containers(current_level)
+	_init_cards()
+	_upd=_update_cards
+end
+
+function _drw_init_level()
+	-- draw whales
+	for whale in all(whales) do
+		draw_whale(whale)
+	end 
+	
+	-- draw containers & end tiles
+	for container in all(containers) do
+		mset(container.x,container.y,container.tile)
+		mset(container.x_end,container.y_end,container.tile_end)
+	end
+
+	_drw=_draw_cards
 end
 
 function _update_manual()
@@ -73,6 +138,7 @@ function _update_auto()
 end
 
 function _update_game()
+
 	p.s=anim_item(wh_spr,wh_spd)
 	if can_move(new_x,new_y,old_x,old_y) then
 		p.x=new_x
@@ -86,8 +152,8 @@ function _update_game()
 end
 
 function _draw_game()
-	spr(p.s,p.x*8,p.y*8,1,1)
-	spr(p.c,p.x*8,p.y*8,1,1)
+	--spr(p.s,p.x*8,p.y*8,1,1)
+	--spr(p.c,p.x*8,p.y*8,1,1)
 	
 	--rect(2*8,12*8,3*8,16*8-1,9)
 	--rect(1*8-1,14*8-1,11*8,15*8,9)
@@ -96,15 +162,9 @@ end
 -->8
 -- movement
 
-local box_types={43,45,59}
-local yellow_box={x=nil,y=nil,tile=43,finish=44}
-local green_box={x=nil,y=nil,tile=59,finish=60}
-local red_box={x=nil,y=nil,tile=45,finish=46}
-
 local dirs={0,1,2,3}
 local x_dirs={-1,1,0,0}
 local y_dirs={0,0,-1,1}
-local box
 
 function can_move(new_x,new_y,old_x,old_y)
 	if not has_moved(new_x,new_y,old_x,old_y) then
@@ -126,7 +186,7 @@ function can_move(new_x,new_y,old_x,old_y)
 			if is_wall or is_movable then
 				return false
 			else
-				--move box
+				--move container
 				mset(moved_x,moved_y,map_tile)
 				remove_tile(new_x,new_y)
 			end
@@ -161,20 +221,20 @@ function get_dir(new_x,new_y,old_x,old_y)
 	end
 end
 
-function is_box(x,y)
+function is_container(x,y)
 	local tile=mget(x,y)
-	if is_in_sequence(tile,box_types) then
+	if is_in_sequence(tile,container_tiles) then
 		return true	
 	end
 	return false
 end
 
-function push_box(box,d)
-	local new_x=box.x+x_dirs[d+1]
-	local new_y=box.y+y_dirs[d+1]
+function push_container(container,d)
+	local new_x=container.x+x_dirs[d+1]
+	local new_y=container.y+y_dirs[d+1]
 	if can_move(new_x,new_y) then
-		box.x=new_x
-		box.y=new_y
+		container.x=new_x
+		container.y=new_y
 	end
 end
 
@@ -221,21 +281,26 @@ function anim_tiles()
 	end
 end
 
-function _draw_whale(w)
+function draw_whale(w)
 	spr(w.s,w.x*8,w.y*8,1,1)
 	spr(w.c,w.x*8,w.y*8,1,1)
 end
 -->8
 -- cards
 
-local w1_steps={}
-local w2_steps={}
-local w3_steps={}
+local whale1_steps={}
+local whale2_steps={}
+local whale3_steps={}
 local rows={13,14,15}
 local cols={2,3,4,5,6,7,8,9,10}
 local cards_spr_toplay={64,65,66,67,68}
 local cards_spr_played={80,81,82,83,84}
 local cards_spr_high={96,97,98,99,100}
+local sleeping_whales={}
+sleeping_whales[rows[1]]=118
+sleeping_whales[rows[2]]=119
+sleeping_whales[rows[3]]=120
+local results={69,85,101}
 local row_old
 local col_old
 local row_new
@@ -245,11 +310,33 @@ local card_new=0
 local row_select={x=1,y=rows[1],xsize=10,ysize=1}
 local col_select={x=cols[1],y=12,xsize=1,ysize=4}
 
+function load_steps()
+
+	-- whale1
+
+	table.insert(whale1_steps,"1")
+
+end
+
+function _init_level(levelNr)
+
+end
+
 function _init_cards()
 	row_new=rows[1]
 	col_new=cols[1]
 	row_old=row_new
 	col_old=col_new
+	for row in all(rows) do
+		for col in all(cols) do
+			-- default card
+			mset(col,row, cards_spr_toplay[1])
+		end
+		-- sleeping whale
+		mset(cols[1]-1,row,sleeping_whales[row])
+		-- result box
+		mset(cols[9]+1,row,results[1])
+	end 
 end
 
 function _update_cards()
@@ -281,9 +368,9 @@ function _update_cards()
 end
 
 function update_whale_sprites()
-	w1.s=anim_item(wh_spr,wh_spd)
-	w2.s=anim_item(wh_spr,wh_spd)
-	w3.s=anim_item(wh_spr,wh_spd)
+	whale1.s=anim_item(wh_spr,wh_spd)
+	whale2.s=anim_item(wh_spr,wh_spd)
+	whale3.s=anim_item(wh_spr,wh_spd)
 end
 
 function update_row_col()
@@ -353,9 +440,9 @@ function _draw_cards()
 end
 
 function draw_whales()
-	_draw_whale(w1)
-	_draw_whale(w2)
-	_draw_whale(w3)
+	draw_whale(whale1)
+	draw_whale(whale2)
+	draw_whale(whale3)
 end
 
 function draw_debug()
@@ -363,7 +450,7 @@ function draw_debug()
 	--rect(0,0,80,30,7)
 	--print("new "..row_new.."-"..col_new,1,1,8)
 	--print("old "..row_old.."-"..col_old,1,8,8)
-	print("card_h "..card_h.col.."-"..card_h.row.."-"..card_h.hi.."-"..card_h.prev,1,1,8)
+	print("y "..containers[1].x.."-"..containers[1].y.."-"..containers[1].x_end.."-"..containers[1].y_end,1,1,8)
 end
 -->8
 -- menu
@@ -388,108 +475,43 @@ function init_menu()
 	}
 end
 
-
--- end_game
-local mark_anim={12,14}
-local anim_speed=8
-
-function update_end_game()
-			if btnp(❎) then
-				extcmd("reset")
-			end
-end
-
-function draw_end_game()
-			camera()
-			map(0,16,0,0,16,16)
-			rect(0,14,127,56,6)
-			spr(anim_player(mark_anim,anim_speed),0,18,2,3)
-			local left_txt=18
-			print("yeah! you made it!",left_txt,18,7)
-			print("i'm mark russinovich, thank",left_txt,24,7)
-			print("you so much for saving this",left_txt,30,7)
-			print("datacenter with the help of",left_txt,36,7)
-			print("azure functions. they are",left_txt,42,7)
-			print("so powerful, right?!",left_txt,48,7)
-			
-			print("press ❎/x to restart",24,68,9)
-			print("created by",44,84,7)
-			print("marc duiker ",42,92,7)
-			print("i",34,108,7)
-			print("♥",42,108,8)
-			print("serverless",52,108,7)
-		end
-
 -->8
 -- texts
-local x1=0
-local y1=50
-local x2=127
-local y2=90
-local xpadding=3
-
-function show_level_1_start_text()
-	draw_text_box()
-	print("restore the energy of the data",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+54,7)
-	print("center by collecting all items.",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+62, 7)
-	print("finish on the green dot.",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+70,7)
-end
-
-function show_bumping_text()
-	draw_text_box()
-	print("hey! please stop humping the",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+54,7)
-	print("servers! that's not the way to",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+62,7)
-	print("turn them on...",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+70,7)
-end
-
-function show_game_over_text()
-	draw_text_box()
-	print(" --= game over =--",game_maps[level_id].pix_x+x1+xpadding+24,game_maps[level_id].pix_y+54,7)
-	print("watch out for those bugs!",game_maps[level_id].pix_x+x1+xpadding+14,game_maps[level_id].pix_y+68,7)
-end
-
-function show_avocado_text()
-	draw_text_box()
-	print("wow, you really like avocados!",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+62,7)
-end
-
-function show_level_start_text()
-	draw_text_box()
-	print("--= level "..game_maps[level_id].level.." =--",game_maps[level_id].pix_x+x1+xpadding+30,game_maps[level_id].pix_y+62,7)
-end
-
-function show_level_end_text()
-	draw_text_box()
-	print("you've finished level "..game_maps[level_id].level.." in "..player.moves,game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+54,7)
-	print("moves!",game_maps[level_id].pix_x+x1+xpadding,game_maps[level_id].pix_y+62,7)
-end
 
 function draw_text_box()
 	rectfill(game_maps[level_id].pix_x+x1,game_maps[level_id].pix_y+y1,game_maps[level_id].pix_x+x2,game_maps[level_id].pix_y+y2,0)
 	rect(game_maps[level_id].pix_x+x1,game_maps[level_id].pix_y+y1,game_maps[level_id].pix_x+x2,game_maps[level_id].pix_y+y2,7)
 	print("press 🅾️/c to continue",game_maps[level_id].pix_x+x1+20,game_maps[level_id].pix_y+81,6) 
 end
+
 -->8
 -- levels
-local levels={}
-
-local level_1={
+level_1={
 	id=1,
-	w1_x=0,
-	w1_y=0,
-	w2_x=0,
-	w2_y=0,
-	w3_x=0,
-	w3_y=0,
+	whale1_x=6,
+	whale1_y=8,
+	whale2_x=8,
+	whale2_y=8,
+	whale3_x=8,
+	whale3_y=7,
+	cy_start_x=6,
+	cy_start_y=7,
+	cg_start_x=7,
+	cg_start_y=8,
+	cr_start_x=9,
+	cr_start_y=7,
+	cy_end_x=6,
+	cy_end_y=2,
+	cg_end_x=7,
+	cg_end_y=2,
+	cr_end_x=9,
+	cr_end_y=2,
 	map_x=0,
 	map_y=0,
 }
 
-function _init_levels()
-	levels={
-		level_1,
-		}
-end
+
+
 -->8
 -- shared
 
@@ -718,13 +740,13 @@ __gff__
 __map__
 0606060606060606060606060606060600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0610102010061010101006102010100611111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000
-0610101010062c3c372e06101010100611101010101010101010101010101011111010101010101010101010101010111110101010101010101010101010101111101111110711111111071111110411111010101010102610101010101004111110101010101010101010101010051100000000000000000000000000000000
+0610101010061010371006101010100611101010101010101010101010101011111010101010101010101010101010111110101010101010101010101010101111101111110711111111071111110411111010101010102610101010101004111110101010101010101010101010051100000000000000000000000000000000
 0610201010061010230606101020100611041111111011101011101111110811111010101011101111101010101010111110040810101011111110051010101111101010101010101010102610101011111011101010111011111110111111101110111111111111111111111111101100000000000000000000000000000000
 0610101010371010233333101010100611101107101011101011101007111011111010041111101111101010081010111110101011101111111110111010101111111111111111111111101111111111111011111010111011061010101105111110110610101010101010101011101100000000000000000000000000000000
 0610101010101010101023101010100611101110101011101011102610111011111010261111100711111010101010111110101011101111112610111010101111111010101010111111071010101011111011071107111011111010101110111110101010101111111107101010101100000000000000000000000000000000
-0610101033100606060623101010100611101110100911101011051010111011111010071110101011111110101010111110101110101111091010101110101111101106101110111110111006111011111011101011111011101010101110111110101010111010101010101010101100000000000000000000000000000000
-0610101524102b10102d23101810100611101111111111101011111111111011111010111110101010101111102610111110101126101111111111101110101111101011111010111110101111101011111011101010111011111110101110111110101011101011111111110710101100000000000000000000000000000000
-0610101023103b10101010101010100611101010101010101006101010101011111010111110101010101011110910111107110910101010141611101011071111101010101010101010101010101011110810101010101010102610101010111110101011041116141010102626261100000000000000000000000000000000
+0610101033101006060623101010100611101110100911101011051010111011111010071110101011111110101010111110101110101111091010101110101111101106101110111110111006111011111011101011111011101010101110111110101010111010101010101010101100000000000000000000000000000000
+0610101524101010101023101810100611101111111111101011111111111011111010111110101010101111102610111110101126101111111111101110101111101011111010111110101111101011111011101010111011111110101110111110101011101011111111110710101100000000000000000000000000000000
+0610101023101010101010101010100611101010101010101006101010101011111010111110101010101011110910111107110910101010141611101011071111101010101010101010101010101011110810101010101010102610101010111110101011041116141010102626261100000000000000000000000000000000
 0610101010101010101010101010100611101111111111261011111111111011111010111010062604101011111110111110101105101010111110101110101111101111111111111111111111111111111011111010111006111411101111111110081111111111111109101010101100000000000000000000000000000000
 0606060606060606060606060606060611101110100611101011101010111011111011111010101010101011161110111110101110101011111110101110261111101010101010261010101010100511111110101011101110111611101110101110101010111010101010101010101100000000000000000000000000000000
 6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f11101110101011101011261610111011111011111010101010101014101110111110101011101011111010111010101111111111111111111111111110111411111110101011101110111111101111101110101010101111111111071010101100000000000000000000000000000000
