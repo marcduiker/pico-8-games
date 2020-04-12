@@ -8,11 +8,32 @@ local _upd
 local _drw
 local _t
 local _spd
-local p
-local whale_colors={17,18,19}
-local whale1={x=nil,y=nil,s=1,c=whale_colors[1],d=0}
-local whale2={x=nil,y=nil,s=1,c=whale_colors[2],d=0}
-local whale3={x=nil,y=nil,s=1,c=whale_colors[3],d=0}
+local rows={13,14,15}
+local cols={2,3,4,5,6,7,8,9,10}
+local row_select={x=1,y=rows[1],xsize=10,ysize=1}
+local col_select={x=cols[1],y=12,xsize=1,ysize=4}
+local cards_dx={}
+local cards_dy={}
+local cards_spr_toplay={64,65,66,67,68}
+local cards_spr_played={80,81,82,83,84}
+local cards_spr_high={96,97,98,99,100}
+cards_dx[cards_spr_toplay[1]]=0
+cards_dx[cards_spr_toplay[2]]=-1
+cards_dx[cards_spr_toplay[3]]=1
+cards_dx[cards_spr_toplay[4]]=0
+cards_dx[cards_spr_toplay[5]]=0
+cards_dy[cards_spr_toplay[1]]=0
+cards_dy[cards_spr_toplay[2]]=0
+cards_dy[cards_spr_toplay[3]]=0
+cards_dy[cards_spr_toplay[4]]=-1
+cards_dy[cards_spr_toplay[5]]=1
+
+local whale_colors_spr={17,18,19}
+local sleeping_whale_spr={118,119,120}
+local whale1={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[1],d=0}
+local whale2={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[2],d=0}
+local whale3={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[3],d=0}
+
 local whales={whale1,whale2,whale3}
 local container_tiles={43,59,45}
 local end_tiles={44,60,46}
@@ -57,10 +78,16 @@ end
 function init_whales(level)
 	whale1.x=level.whale1_x
 	whale1.y=level.whale1_y
+	whale1.fx=level.whale1_flipx
+	whale1.s=sleeping_whale_spr[1]
 	whale2.x=level.whale2_x
 	whale2.y=level.whale2_y
+	whale2.fx=level.whale2_flipx
+	whale2.s=sleeping_whale_spr[2]
 	whale3.x=level.whale3_x
 	whale3.y=level.whale3_y
+	whale3.fx=level.whale3_flipx
+	whale3.s=sleeping_whale_spr[3]
 end
 
 function init_containers(level)
@@ -102,7 +129,7 @@ function _drw_init_level()
 		mset(container.x_end,container.y_end,container.tile_end)
 	end
 
-	_drw=_draw_cards
+	_drw=_draw_whales_and_cards
 end
 
 function _update_manual()
@@ -121,34 +148,64 @@ function _update_manual()
 		new_y+=1
 	end
 			
-	_update_game()
+	update_game()
 	
 end
 
-function _update_auto()
-	new_x=p.x
-	new_y=p.y	
-	old_x=p.x
-	old_y=p.y
-	
-	-- get movements from sequence
-	
-	_update_game()
-	
+local start_time
+local active_col
+
+function _update_start_run()
+	start_time=time()
+	active_col=cols[1]
+	reset_row_and_col()
+	_upd=_update_run_game
+	_drw=_draw_whales_and_cards
 end
 
-function _update_game()
+function _update_run_game()
+	for row in all(rows) do
+		if time() - start_time > 1 then
+			update_move(whale1,row,active_col)
+		elseif time() - start_time > 2 then
+			update_move(whale2,row,active_col)
+		elseif time() - start_time > 3 then
+			update_move(whale3,row,active_col)
+		end
+	end
 
-	p.s=anim_item(wh_spr,wh_spd)
-	if can_move(new_x,new_y,old_x,old_y) then
-		p.x=new_x
-		p.y=new_y
+	if time()-start_time > 4 then
+		active_col+=1
+		start_time=time()
+	end
+end
+
+function reset_row_and_col()
+	col_select.x=cols[1]
+	row_select.y=rows[1]
+end
+
+function update_move(whale,row,col)
+	whale.s=anim_item(wh_spr,wh_spd)
+	tile=mget(row,col)
+	dx=cards_dx[tile]
+	dy=cards_dy[tile]
+	whale.new_x=whale.x+dx
+	whale.new_y=whale.y+dy
+	old_x=whale.x
+	old_y=whale.y
+	if can_move(whale.new_x,whale.new_y,whale.x,whale.y) then
+		whale.x=whale.new_x
+		whale.y=whale.new_y
 	end
 	
-	if has_moved(p.x,p.y,old_x,old_y) then
-		p.d=get_dir(new_x,new_y,old_x,old_y)
+	if has_moved(whale.x,whale.y,old_x,old_y) then
+		whale.d=get_dir(whale.x,whale.y,old_x,old_y)
 		sfx(1,0,0)
 	end
+
+	row_select.y=col
+	col_select.x=row
 end
 
 function _draw_game()
@@ -162,7 +219,7 @@ end
 -->8
 -- movement
 
-local dirs={0,1,2,3}
+--local dirs={0,1,2,3}
 local x_dirs={-1,1,0,0}
 local y_dirs={0,0,-1,1}
 
@@ -253,7 +310,7 @@ wave_right_spr={55,56,57,58}
 
 function anim_tiles()
 	
-	for ax=0,15 do	
+	for ax=0,15 do
 		for ay=0,15 do
 			local tile=mget(ax,ay)
 			local anim_flag=fget(tile,3)
@@ -282,24 +339,18 @@ function anim_tiles()
 end
 
 function draw_whale(w)
-	spr(w.s,w.x*8,w.y*8,1,1)
-	spr(w.c,w.x*8,w.y*8,1,1)
+	spr(w.s,w.x*8,w.y*8,1,1,w.fx)
+	spr(w.c,w.x*8,w.y*8,1,1,w.fx)
 end
 -->8
 -- cards
 
-local whale1_steps={}
-local whale2_steps={}
-local whale3_steps={}
-local rows={13,14,15}
-local cols={2,3,4,5,6,7,8,9,10}
-local cards_spr_toplay={64,65,66,67,68}
-local cards_spr_played={80,81,82,83,84}
-local cards_spr_high={96,97,98,99,100}
+
+
 local sleeping_whales={}
-sleeping_whales[rows[1]]=118
-sleeping_whales[rows[2]]=119
-sleeping_whales[rows[3]]=120
+sleeping_whales[rows[1]]=sleeping_whale_spr[1]
+sleeping_whales[rows[2]]=sleeping_whale_spr[2]
+sleeping_whales[rows[3]]=sleeping_whale_spr[3]
 local results={69,85,101}
 local row_old
 local col_old
@@ -307,20 +358,9 @@ local row_new
 local col_new
 local card_h={col=2,row=13,hi=96,prev=64}
 local card_new=0
-local row_select={x=1,y=rows[1],xsize=10,ysize=1}
-local col_select={x=cols[1],y=12,xsize=1,ysize=4}
 
-function load_steps()
 
-	-- whale1
 
-	table.insert(whale1_steps,"1")
-
-end
-
-function _init_level(levelNr)
-
-end
 
 function _init_cards()
 	row_new=rows[1]
@@ -341,7 +381,7 @@ end
 
 function _update_cards()
 	-- only set old when has_moved==true?
-	update_whale_sprites()
+	--update_whale_sprites()
 	--row_new=row_old
 	--col_new=col_old
 	if btnp(⬅️) then
@@ -357,6 +397,8 @@ function _update_cards()
 		change_card()
 	elseif btnp(❎) then
 		-- start run
+		_upd=_update_start_run
+		_drw=_draw_whales_and_cards
 	end
 		
 	if has_moved(col_new,row_new,col_old,row_old) then
@@ -419,10 +461,9 @@ function change_card()
 	mset(card_h.col,card_h.row,card_h.hi)
 end
 
-function _draw_cards()
+function _draw_whales_and_cards()
 	draw_debug()
 	draw_whales()
-	
 	print("program the whales 🅾️ and go ❎!",1,90,7)
 	rect(
 		row_select.x*8-1,
@@ -450,7 +491,9 @@ function draw_debug()
 	--rect(0,0,80,30,7)
 	--print("new "..row_new.."-"..col_new,1,1,8)
 	--print("old "..row_old.."-"..col_old,1,8,8)
-	print("y "..containers[1].x.."-"..containers[1].y.."-"..containers[1].x_end.."-"..containers[1].y_end,1,1,8)
+	if tile!=nil then
+		print("tile "..tile,1,100,8)
+	end
 end
 -->8
 -- menu
@@ -490,10 +533,13 @@ level_1={
 	id=1,
 	whale1_x=6,
 	whale1_y=8,
+	whale1_flipx=false,
 	whale2_x=8,
 	whale2_y=8,
+	whale2_flipx=false,
 	whale3_x=8,
 	whale3_y=7,
+	whale3_flipx=true,
 	cy_start_x=6,
 	cy_start_y=7,
 	cg_start_x=7,
@@ -596,14 +642,14 @@ __gfx__
 77777777772882227222882777788877772888277787877618ccccd118ccccd118ccccd137777333333333338777888888888888000000000000000011111111
 7777777777728777777782777778887777728277787778761777cd111777cd111777cd1137337373373733738788877787778777000000000000000011111111
 77777777777727777777277777722277777727777777777611111111111111111111111137337373373773738777887887878787000000000000000011111111
-000000000000000000000000000000000000000000000000149a1c1c13ba1c1c18ef1c1c37773373373737738887887887878777000000000000000077777777
-000000000000000000000000000000000000000000000000149a11c113ba11c118ef11c137337373373733738887887887878788000000000000000077777777
-000000000000000000000000000000000000000000000000ccccccc1ccccccc1ccccccc137337377773733738777887887778788000000000000000077777777
+00000000000000000000000000000000000000000000000011111111111111111111111137773373373737738887887887878777000000000000000077777777
+000000000000000000000000000000000000000000000000149a1c1c13ba1c1c18ef1c1c37337373373733738887887887878788000000000000000077777777
+000000000000000000000000000000000000000000000000149a11c113ba11c118ef11c137337377773733738777887887778788000000000000000077777777
+000000000000000000000000000000000000000000000000ccccccc1ccccccc1ccccccc133333333333333338888888888888888000000000000000077777777
 000000000000000000000000000000000000000000000000ccccccc1ccccccc1ccccccc133333333333333338888888888888888000000000000000077777777
 000000000000000000000000000000000000000000000000cc11ccc1cc11ccc1cc11ccc133333333333333338888888888888888000000000000000077777777
 000000000000000000000000000000000000000000000000177cccd1177cccd1177cccd133333333333333338888888888888888000000000000000077777777
-0000000000000000000000000000000000000000000000001177cd111177cd111177cd1133333333333333338888888888888888000000000000000077777777
-00000000000000000000000000000000000000000000000011111111111111111111111111111111111111111111111111111111000000000000000077777777
+0000000000000000000000000000000000000000000000001177cd111177cd111177cd1111111111111111111111111111111111000000000000000077777777
 __label__
 88555556155555561555555615555556155555561555555615555556155555561555555615555556155555561555555615555556155555561555555615555556
 68666665666666656666666566666665666666656666666566666665666666656666666566666665666666656666666566666665666666656666666566666665
@@ -740,7 +786,7 @@ __gff__
 __map__
 0606060606060606060606060606060600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0610102010061010101006102010100611111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000
-0610101010061010371006101010100611101010101010101010101010101011111010101010101010101010101010111110101010101010101010101010101111101111110711111111071111110411111010101010102610101010101004111110101010101010101010101010051100000000000000000000000000000000
+0610101010062c3c372e06101010100611101010101010101010101010101011111010101010101010101010101010111110101010101010101010101010101111101111110711111111071111110411111010101010102610101010101004111110101010101010101010101010051100000000000000000000000000000000
 0610201010061010230606101020100611041111111011101011101111110811111010101011101111101010101010111110040810101011111110051010101111101010101010101010102610101011111011101010111011111110111111101110111111111111111111111111101100000000000000000000000000000000
 0610101010371010233333101010100611101107101011101011101007111011111010041111101111101010081010111110101011101111111110111010101111111111111111111111101111111111111011111010111011061010101105111110110610101010101010101011101100000000000000000000000000000000
 0610101010101010101023101010100611101110101011101011102610111011111010261111100711111010101010111110101011101111112610111010101111111010101010111111071010101011111011071107111011111010101110111110101010101111111107101010101100000000000000000000000000000000
