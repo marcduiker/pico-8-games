@@ -4,69 +4,85 @@ __lua__
 -- yucky yaml
 -- by marc duiker
 
-local _upd
-local _drw
-local _t
-local _spd
-local rows={13,14,15}
-local cols={2,3,4,5,6,7,8,9,10}
-local row_select={x=1,y=rows[1],xsize=10,ysize=1}
-local col_select={x=cols[1],y=12,xsize=1,ysize=4}
-local cards_dx={}
-local cards_dy={}
-local cards_spr_toplay={64,65,66,67,68}
-local cards_spr_played={80,81,82,83,84}
-local cards_spr_high={96,97,98,99,100}
-cards_dx[cards_spr_toplay[1]]=0
-cards_dx[cards_spr_toplay[2]]=-1
-cards_dx[cards_spr_toplay[3]]=1
-cards_dx[cards_spr_toplay[4]]=0
-cards_dx[cards_spr_toplay[5]]=0
-cards_dy[cards_spr_toplay[1]]=0
-cards_dy[cards_spr_toplay[2]]=0
-cards_dy[cards_spr_toplay[3]]=0
-cards_dy[cards_spr_toplay[4]]=-1
-cards_dy[cards_spr_toplay[5]]=1
-
-local whale_colors_spr={17,18,19}
-local sleeping_whale_spr={118,119,120}
-local whale1={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[1],d=0}
-local whale2={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[2],d=0}
-local whale3={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[3],d=0}
-
-local whales={whale1,whale2,whale3}
-local container_tiles={43,59,45}
-local end_tiles={44,60,46}
-local container_y={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[1],tile_end=end_tiles[1]}
-local container_g={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[2],tile_end=end_tiles[2]}
-local container_r={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[3],tile_end=end_tiles[3]}
-local containers={}
-local levels={}
-local current_level={}
-local new_x
-local new_y
-local old_x
-local old_y
 
 function _init()
-	_t=0
-	_spd=3
+	_debug_val=0
+	anim_t=0
+	step_t=0
+	rows={13,14,15}
+	cols={2,3,4,5,6,7,8,9,10}
+	row_select={x=1,y=rows[1],xsize=10,ysize=1}
+	col_select={x=cols[1],y=12,xsize=1,ysize=4}
+	cards_dx={0,-1,1,0,0}
+	cards_dy={0,0,0,-1,1}
+	cards_spr_toplay={64,65,66,67,68}
+	cards_spr_played={80,81,82,83,84}
+	cards_spr_high={96,97,98,99,100}
+
+	whale_colors_spr={17,18,19}
+	sleeping_whale_spr={118,119,120}
+	whale1={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[1],d=0,success=nil}
+	whale2={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[2],d=0,success=nil}
+	whale3={x=nil,y=nil,new_x=nil,new_y=nil,s=nil,fx=nil,c=whale_colors_spr[3],d=0,success=nil}
+	whales={whale1,whale2,whale3}
+	container_tiles={43,59,45}
+	end_tiles={44,60,46}
+	container_y={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[1],tile_end=end_tiles[1],x_prev=nil,y_prev=nil}
+	container_g={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[2],tile_end=end_tiles[2],x_prev=nil,y_prev=nil}
+	container_r={x=nil,y=nil,x_end=nil,y_end=nil,tile=container_tiles[3],tile_end=end_tiles[3],x_prev=nil,y_prev=nil}
+	containers={}
+	levels={}
+	current_level={}
+	sleeping_whales={}
+	sleeping_whales[rows[1]]=sleeping_whale_spr[1]
+	sleeping_whales[rows[2]]=sleeping_whale_spr[2]
+	sleeping_whales[rows[3]]=sleeping_whale_spr[3]
+	result_tiles={69,85,101}
+	tile_spd=6
+	row_old=nil
+	col_old=nil
+	row_new=nil
+	col_new=nil
+	card_h={col=2,row=13,hi=96,prev=64}
+	card_new=0
+	-- animation
+	wh_spd=3
+	wh_spr={1,2,3,4,2}
+	yf_spr={21,22,23,22}
+	sk_spr={26,25,24}
+	wave_up_spr={35,36,37,38}
+	wave_down_spr={39,40,41,42}
+	wave_left_spr={51,52,53,54}
+	wave_right_spr={55,56,57,58}
+
+ 	step_spd=9
+	active_col=nil
+	active_row=nil
+	do_row1=true
+	do_row1=true
+	do_row1=true
+
 	_init_levels()
 	current_level=levels[1]
 	_upd=_upd_init_level
 	_drw=_drw_init_level
 end
 
-function _update()
- _t+=1
- anim_tiles()
- _upd()
-end
-
-function _draw()
- cls()
- map(0,0,0,0,16,16)
- _drw()
+function _init_cards()
+	row_new=rows[1]
+	col_new=cols[1]
+	row_old=row_new
+	col_old=col_new
+	for row in all(rows) do
+		for col in all(cols) do
+			-- default card
+			mset(col,row, cards_spr_toplay[1])
+		end
+		-- sleeping whale
+		mset(cols[1]-1,row,sleeping_whales[row])
+		-- result box
+		mset(cols[9]+1,row,result_tiles[1])
+	end 
 end
 
 function _init_levels()
@@ -110,6 +126,30 @@ function init_containers(level)
 	containers={container_y,container_g,container_r}
 end
 
+function _update_start_run()
+	step_t=0
+	reset_row_and_col()
+	_upd=_update_run_game
+	_drw=_draw_running_steps
+end
+
+
+function reset_row_and_col()
+	col_select.x=cols[1]
+	row_select.y=rows[1]
+	active_col=cols[1]
+	active_row=rows[1]
+end
+-->8
+-- updates
+
+function _update()
+ anim_t+=1
+ step_t+=1
+ anim_tiles()
+ _upd()
+end
+
 function _upd_init_level()
 	init_whales(current_level)
 	init_containers(current_level)
@@ -117,84 +157,70 @@ function _upd_init_level()
 	_upd=_update_cards
 end
 
-function _drw_init_level()
-	-- draw whales
-	for whale in all(whales) do
-		draw_whale(whale)
-	end 
-	
-	-- draw containers & end tiles
-	for container in all(containers) do
-		mset(container.x,container.y,container.tile)
-		mset(container.x_end,container.y_end,container.tile_end)
-	end
-
-	_drw=_draw_whales_and_cards
-end
-
-function _update_manual()
-	new_x=p.x
-	new_y=p.y	
-	old_x=p.x
-	old_y=p.y
-	
-	if btnp(⬅️) then
-		new_x-=1
-	elseif btnp(➡️) then
-		new_x+=1
-	elseif btnp(⬆️) then
-		new_y-=1
-	elseif btnp(⬇️) then
-		new_y+=1
-	end
-			
-	update_game()
-	
-end
-
-local start_time
-local active_col
-
-function _update_start_run()
-	start_time=time()
-	active_col=cols[1]
-	reset_row_and_col()
-	_upd=_update_run_game
-	_drw=_draw_whales_and_cards
-end
-
 function _update_run_game()
-	for row in all(rows) do
-		if time() - start_time > 1 then
-			update_move(whale1,row,active_col)
-		elseif time() - start_time > 2 then
-			update_move(whale2,row,active_col)
-		elseif time() - start_time > 3 then
-			update_move(whale3,row,active_col)
+	if step_t > step_spd then
+		update_selection_bars(active_col,active_row)
+		col_new=active_col
+		row_new=active_row
+		highlight()
+		if active_row==rows[1] then
+			update_move(whale1,active_col,active_row,container_y)
+			check_end_tile(whale1,container_y)
+			_debug_val=container_y.x..","..container_y.x_end.."|"..container_y.y..","..container_y.y_end.."|"..container_y.tile
+		elseif active_row==rows[2] then
+			update_move(whale2,active_col,active_row,container_g)
+			check_end_tile(whale2,container_g)
+		elseif active_row==rows[3] then
+			update_move(whale3,active_col,active_row,container_r)
+			check_end_tile(whale3,container_r)
 		end
+		
+		if active_row!=rows[3] then
+			active_row+=1
+		elseif active_row==rows[3] then
+			active_row=rows[1]
+			active_col+=1
+		end
+		step_t=0
 	end
 
-	if time()-start_time > 4 then
-		active_col+=1
-		start_time=time()
+	if active_col > cols[9] then
+		_upd=_update_postrun
+		_drw=_draw_postrun
 	end
 end
 
-function reset_row_and_col()
-	col_select.x=cols[1]
-	row_select.y=rows[1]
+function check_end_tile(whale,container)
+	if container.x==container.x_end and container.y==container.y_end then
+		whale.success=true
+	end
 end
 
-function update_move(whale,row,col)
+function _update_postrun()
+	whale1.s=sleeping_whale_spr[1]
+	whale2.s=sleeping_whale_spr[2]
+	whale3.s=sleeping_whale_spr[3]
+end
+
+function update_selection_bars(col,row)
+	row_select.y=row
+	col_select.x=col
+end
+
+function update_move(whale,x,y,container)
 	whale.s=anim_item(wh_spr,wh_spd)
-	tile=mget(row,col)
-	dx=cards_dx[tile]
-	dy=cards_dy[tile]
+	local tile=mget(x,y)
+	local i=get_index(tile,cards_spr_high)
+	if i==nil then
+		i=get_index(tile,cards_spr_toplay)
+	end
+	local dx=cards_dx[i]
+	local dy=cards_dy[i] 
 	whale.new_x=whale.x+dx
 	whale.new_y=whale.y+dy
-	old_x=whale.x
-	old_y=whale.y
-	if can_move(whale.new_x,whale.new_y,whale.x,whale.y) then
+	local old_x=whale.x
+	local old_y=whale.y
+	if can_move(whale.new_x,whale.new_y,whale.x,whale.y,container) then
 		whale.x=whale.new_x
 		whale.y=whale.new_y
 	end
@@ -203,187 +229,9 @@ function update_move(whale,row,col)
 		whale.d=get_dir(whale.x,whale.y,old_x,old_y)
 		sfx(1,0,0)
 	end
-
-	row_select.y=col
-	col_select.x=row
-end
-
-function _draw_game()
-	--spr(p.s,p.x*8,p.y*8,1,1)
-	--spr(p.c,p.x*8,p.y*8,1,1)
-	
-	--rect(2*8,12*8,3*8,16*8-1,9)
-	--rect(1*8-1,14*8-1,11*8,15*8,9)
-	--print(p.d,0,0,8)
-end
--->8
--- movement
-
---local dirs={0,1,2,3}
-local x_dirs={-1,1,0,0}
-local y_dirs={0,0,-1,1}
-
-function can_move(new_x,new_y,old_x,old_y)
-	if not has_moved(new_x,new_y,old_x,old_y) then
-		return false
-	end
-	local map_tile=mget(new_x,new_y)
-	local is_wall=fget(map_tile,0)
-	if is_wall then
-		return false
-	else
-		local is_movable=fget(map_tile,1)
-		d=get_dir(new_x,new_y,old_x,old_y)
-		if is_movable then
-			local moved_x=new_x+x_dirs[d+1]
-			local moved_y=new_y+y_dirs[d+1] 
-			local moved_map_tile=mget(moved_x,moved_y)
-			local is_wall=fget(moved_map_tile,0)
-			local is_movable=fget(moved_map_tile,1)
-			if is_wall or is_movable then
-				return false
-			else
-				--move container
-				mset(moved_x,moved_y,map_tile)
-				remove_tile(new_x,new_y)
-			end
-		end 
-		return true
-	end
-end
-
-function is_collectable(x,y)
-	local tile=mget(x,y)
-	local collect_flag=fget(tile,1)
-	if collect_flag then
-		return true
-	else
-		return false
-	end
-end
-
-function remove_tile(x,y)
-	mset(x,y,16)
-end
-
-function has_moved(new_x,new_y,old_x,old_y)
-	return not (new_x==old_x and new_y==old_y)
-end
-
-function get_dir(new_x,new_y,old_x,old_y)
-	if new_x<old_x then return 0
-	elseif new_x>old_x then return 1
-	elseif new_y<old_y then return 2
-	elseif new_y>old_y then return 3
-	end
-end
-
-function is_container(x,y)
-	local tile=mget(x,y)
-	if is_in_sequence(tile,container_tiles) then
-		return true	
-	end
-	return false
-end
-
-function push_container(container,d)
-	local new_x=container.x+x_dirs[d+1]
-	local new_y=container.y+y_dirs[d+1]
-	if can_move(new_x,new_y) then
-		container.x=new_x
-		container.y=new_y
-	end
-end
-
--->8
--- sprites and animation
-
-tile_spd=6
-wh_spd=3
-wh_spr={1,2,3,4,2}
-yf_spr={21,22,23,22}
-sk_spr={26,25,24}
-wave_up_spr={35,36,37,38}
-wave_down_spr={39,40,41,42}
-wave_left_spr={51,52,53,54}
-wave_right_spr={55,56,57,58}
-
-function anim_tiles()
-	
-	for ax=0,15 do
-		for ay=0,15 do
-			local tile=mget(ax,ay)
-			local anim_flag=fget(tile,3)
-			if anim_flag then
-				local array={}
-				if is_in_sequence(tile,yf_spr) then
-					array=yf_spr
-				elseif is_in_sequence(tile,sk_spr) then
-					array=sk_spr
-				elseif is_in_sequence(tile,wave_up_spr) then
-					array=wave_up_spr
-				elseif is_in_sequence(tile,wave_down_spr) then
-					array=wave_down_spr
-				elseif is_in_sequence(tile,wave_left_spr) then
-					array=wave_left_spr
-				elseif is_in_sequence(tile,wave_right_spr) then
-					array=wave_right_spr
-				end
-				if #array>0 then
-					local anim_spr=anim_item(array,tile_spd)
-					mset(ax,ay,anim_spr)
-				end
-			end
-		end
-	end
-end
-
-function draw_whale(w)
-	spr(w.s,w.x*8,w.y*8,1,1,w.fx)
-	spr(w.c,w.x*8,w.y*8,1,1,w.fx)
-end
--->8
--- cards
-
-
-
-local sleeping_whales={}
-sleeping_whales[rows[1]]=sleeping_whale_spr[1]
-sleeping_whales[rows[2]]=sleeping_whale_spr[2]
-sleeping_whales[rows[3]]=sleeping_whale_spr[3]
-local results={69,85,101}
-local row_old
-local col_old
-local row_new
-local col_new
-local card_h={col=2,row=13,hi=96,prev=64}
-local card_new=0
-
-
-
-
-function _init_cards()
-	row_new=rows[1]
-	col_new=cols[1]
-	row_old=row_new
-	col_old=col_new
-	for row in all(rows) do
-		for col in all(cols) do
-			-- default card
-			mset(col,row, cards_spr_toplay[1])
-		end
-		-- sleeping whale
-		mset(cols[1]-1,row,sleeping_whales[row])
-		-- result box
-		mset(cols[9]+1,row,results[1])
-	end 
 end
 
 function _update_cards()
-	-- only set old when has_moved==true?
-	--update_whale_sprites()
-	--row_new=row_old
-	--col_new=col_old
 	if btnp(⬅️) then
 		col_new-=1
 	elseif btnp(➡️) then
@@ -398,7 +246,7 @@ function _update_cards()
 	elseif btnp(❎) then
 		-- start run
 		_upd=_update_start_run
-		_drw=_draw_whales_and_cards
+		_drw=_draw_running_steps
 	end
 		
 	if has_moved(col_new,row_new,col_old,row_old) then
@@ -428,6 +276,89 @@ function update_row_col()
 	col_select.x=col_new
 end
 
+local x_dirs={-1,1,0,0}
+local y_dirs={0,0,-1,1}
+
+function can_move(new_x,new_y,old_x,old_y,container)
+	if not has_moved(new_x,new_y,old_x,old_y) then
+		return false
+	end
+	local map_tile=mget(new_x,new_y)
+	local is_wall=fget(map_tile,0)
+	if is_wall then
+		return false
+	else
+		local is_movable=fget(map_tile,1)
+		d=get_dir(new_x,new_y,old_x,old_y)
+		if is_movable then
+			local moved_x=new_x+x_dirs[d+1]
+			local moved_y=new_y+y_dirs[d+1] 
+			local moved_map_tile=mget(moved_x,moved_y)
+			local is_wall=fget(moved_map_tile,0)
+			local is_movable=fget(moved_map_tile,1)
+			if is_wall or is_movable then
+				return false
+			else
+				--move container
+				container.x=moved_x
+				container.y=moved_y
+				container.x_prev=new_x
+				container.y_prev=new_y
+			end
+		end 
+		return true
+	end
+end
+
+function remove_tile(x,y)
+	mset(x,y,16)
+end
+
+function has_moved(new_x,new_y,old_x,old_y)
+	return not (new_x==old_x and new_y==old_y)
+end
+
+function get_dir(new_x,new_y,old_x,old_y)
+	if new_x<old_x then return 0
+	elseif new_x>old_x then return 1
+	elseif new_y<old_y then return 2
+	elseif new_y>old_y then return 3
+	end
+end
+
+function is_container(x,y)
+	local tile=mget(x,y)
+	if is_in_sequence(tile,container_tiles) then
+		return true	
+	end
+	return false
+end
+
+-->8
+-- draws
+
+function _draw()
+ cls()
+ map(0,0,0,0,16,16)
+ _drw()
+end
+
+function _drw_init_level()
+	-- draw whales
+	for whale in all(whales) do
+		draw_whale(whale)
+	end 
+	
+	-- draw containers & end tiles
+	for container in all(containers) do
+		mset(container.x,container.y,container.tile)
+		mset(container.x_end,container.y_end,container.tile_end)
+	end
+
+	_drw=_draw_running_steps
+end
+
+-- cards
 function highlight()
 	local card_act=mget(col_new,row_new)
 	if card_h.prev>0 then
@@ -461,9 +392,11 @@ function change_card()
 	mset(card_h.col,card_h.row,card_h.hi)
 end
 
-function _draw_whales_and_cards()
+function _draw_running_steps()
 	draw_debug()
 	draw_whales()
+	draw_containers()
+	draw_results_running()
 	print("program the whales 🅾️ and go ❎!",1,90,7)
 	rect(
 		row_select.x*8-1,
@@ -477,7 +410,15 @@ function _draw_whales_and_cards()
 		(col_select.x+col_select.xsize)*8,
 		(col_select.y+col_select.ysize)*8,
 		9)
-	-- col: rect(2*8,12*8,3*8,16*8-1,9)
+end
+
+
+function _draw_postrun()
+	draw_debug()
+	draw_whales()
+	draw_containers()
+	draw_results_postrun()
+	print("program the whales 🅾️ and go ❎!",1,90,7)
 end
 
 function draw_whales()
@@ -486,14 +427,92 @@ function draw_whales()
 	draw_whale(whale3)
 end
 
+function draw_containers()
+	draw_container(container_y)
+	draw_container(container_g)
+	draw_container(container_r)
+end
+
+function draw_container(container)
+	mset(container.x,container.y,container.tile)
+	if container.x_prev!=nil then
+		remove_tile(container.x_prev,container.y_prev)
+	end
+end
+
+function draw_results_running()
+	draw_result_running(whale1,end_tiles[1],rows[1])
+	draw_result_running(whale2,end_tiles[2],rows[2])
+	draw_result_running(whale3,end_tiles[3],rows[3])
+end
+
+function draw_results_postrun()
+	draw_result_postrun(whale1,end_tiles[1],rows[1])
+	draw_result_postrun(whale2,end_tiles[2],rows[2])
+	draw_result_postrun(whale3,end_tiles[3],rows[3])
+end
+
+function draw_result_running(whale,end_tile,row)
+	if whale.success then
+		mset(11,row,result_tiles[2])
+	else
+		mset(11,row,result_tiles[1])
+	end
+end
+
+function draw_result_postrun(whale,end_tile,row)
+	if whale.success then
+		mset(11,row,result_tiles[2])
+	else
+		mset(11,row,result_tiles[3])
+	end
+end
+
 function draw_debug()
 	--rectfill(0,0,80,30,0)
 	--rect(0,0,80,30,7)
 	--print("new "..row_new.."-"..col_new,1,1,8)
 	--print("old "..row_old.."-"..col_old,1,8,8)
-	if tile!=nil then
-		print("tile "..tile,1,100,8)
+	
+	print(_debug_val,1,1,8)
+end
+
+function _draw_show_score()
+
+end
+
+function anim_tiles()
+	for ax=0,15 do
+		for ay=0,15 do
+			local tile=mget(ax,ay)
+			local anim_flag=fget(tile,3)
+			if anim_flag then
+				local array={}
+				if is_in_sequence(tile,yf_spr) then
+					array=yf_spr
+				elseif is_in_sequence(tile,sk_spr) then
+					array=sk_spr
+				elseif is_in_sequence(tile,wave_up_spr) then
+					array=wave_up_spr
+				elseif is_in_sequence(tile,wave_down_spr) then
+					array=wave_down_spr
+				elseif is_in_sequence(tile,wave_left_spr) then
+					array=wave_left_spr
+				elseif is_in_sequence(tile,wave_right_spr) then
+					array=wave_right_spr
+				end
+				if #array>0 then
+					local anim_spr=anim_item(array,tile_spd)
+					mset(ax,ay,anim_spr)
+				end
+			end
+		end
 	end
+end
+
+function draw_whale(w)
+	spr(w.s,w.x*8,w.y*8,1,1,w.fx)
+	spr(w.c,w.x*8,w.y*8,1,1,w.fx)
 end
 -->8
 -- menu
@@ -518,6 +537,8 @@ function init_menu()
 	}
 end
 
+
+
 -->8
 -- texts
 
@@ -529,6 +550,7 @@ end
 
 -->8
 -- levels
+
 level_1={
 	id=1,
 	whale1_x=6,
@@ -556,13 +578,11 @@ level_1={
 	map_y=0,
 }
 
-
-
 -->8
 -- shared
 
 function anim_item(array,speed)
-	local i=flr(_t/speed%#array)+1
+	local i=flr(anim_t/speed%#array)+1
 	return array[i]
 end
 
@@ -797,9 +817,9 @@ __map__
 0606060606060606060606060606060611101110100611101011101010111011111011111010101010101011161110111110101110101011111110101110261111101010101010261010101010100511111110101011101110111611101110101110101010111010101010101010101100000000000000000000000000000000
 6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f6f11101110101011101011261610111011111011111010101010101014101110111110101011101011111010111010101111111111111111111111111110111411111110101011101110111111101111101110101010101111111111071010101100000000000000000000000000000000
 6f6f464748494a4b4c4d4e6f6f6f6f6f11101107101011101011101010111011111011071010101111111111111110111110101011101011111010111010101111081010101010261010101010111011111110101011101110111110101110101110111010101010101010100611101100000000000000000000000000000000
-2b7640404040404040404045696a6b6c11101111111011101011141111111011111011101011111111111111111110111110101006101011101010101010101111111110111111111111111111111011110511111010111010110711101111111110111111111111111111111111101100000000000000000000000000000000
-3b6740404040404040404045797a7b7c11101010101010101010101010100911110610101010101010100510101010111110101010101007101010101010101111051010101010101010101009111611111010101010261010101010101009111110101010101010101010101010051100000000000000000000000000000000
-2d68404040404040404040456f6f6f6f11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000
+2b76404040404040404040451010101011101111111011101011141111111011111011101011111111111111111110111110101006101011101010101010101111111110111111111111111111111011110511111010111010110711101111111110111111111111111111111111101100000000000000000000000000000000
+3b77404040404040404040451010101011101010101010101010101010100911110610101010101010100510101010111110101010101007101010101010101111051010101010101010101009111611111010101010261010101010101009111110101010101010101010101010051100000000000000000000000000000000
+2d78404040404040404040456f6f6f6f11111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111100000000000000000000000000000000
 3400340034003400340034003400340000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
