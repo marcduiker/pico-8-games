@@ -82,7 +82,7 @@ function _init_cards()
 		mset(cols[1]-1,row,sleeping_whales[row])
 		-- result box
 		mset(cols[9]+1,row,result_tiles[1])
-	end 
+	end
 end
 
 function _init_levels()
