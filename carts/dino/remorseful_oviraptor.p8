@@ -2,8 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 33
 __lua__
 -- main
-
--- dino.p8
+-- remorseful oviraptor
 -- marc duiker,@marcduiker,2022
 
 function _init()
@@ -23,8 +22,8 @@ function init_game()
 	target=4
 	score=0
 	btnbuffer=-1
-	_upd=update_game
-	_drw=draw_player
+	_upd=update_menu
+	_drw=draw_menu
 end
 
 
@@ -35,7 +34,6 @@ end
 
 function _draw()
 	cls()
-	map(0,0)
 	draw_dinos()
 	draw_water()
 	draw_time()
@@ -90,7 +88,7 @@ function update_player(_dx,_dy)
 	
 	local destx=p.x+_dx
 	local desty=p.y+_dy
-	if isobstacle(destx,desty) or (iswater(destx,desty) and p.hasegg) then
+	if isblocking(destx,desty,p.hasegg) then
 		p.sx=_dx*8
 		p.sy=_dy*8
 		p.dx=0
@@ -100,6 +98,7 @@ function update_player(_dx,_dy)
 		_upd=update_player_move
 		if isdino(destx,desty) and p.hasegg then
 			if try_deliver_egg(destx,desty,p.eggspr) then
+				sfx(2)
 				p.hasegg=false
 				p.eggspr=nil
 				p.egg_anim=nil
@@ -107,6 +106,7 @@ function update_player(_dx,_dy)
 		end
 	else
 		if isegg(destx,desty) and not p.hasegg then
+			sfx(1)
 			setegganim(destx,desty)
 			p.hasegg=true
 			p.eggspr=mget(destx,desty)
@@ -129,7 +129,7 @@ end
 function check_score()
 	if score==target then
 		game_over=true
-		_upd=update_menu
+		_upd=update_game_over
 		_drw=draw_game_over
 	end
 end
@@ -161,7 +161,10 @@ function dobtn(button)
   update_player(dirx[button+1],diry[button+1])
   return
  end
- -- menu button
+ if button==5 then
+  run()
+ end
+ 
 end
 
 function seq_walk()
@@ -174,6 +177,23 @@ function seq_obstacle()
 	p.dy=p.sy*(1-p.t)
 end
 
+function isblocking(_x,_y,_hasegg)
+	local isobs=isobstacle(_x,_y)
+	local iswaterandegg=iswater(_x,_y) and _hasegg
+	local isdino=isdino(_x,_y)
+	if isdino then
+		sfx(6)
+		return true
+	elseif iswaterandegg then
+		sfx(4)
+		return true
+	elseif isobs then
+		sfx(3)
+		return true
+	end
+	
+	return false
+end
 
 function isobstacle(_x,_y)
 	local tile=mget(_x,_y)
@@ -217,6 +237,8 @@ function init_dinos()
 	dino1={
 		x=1,
 		y=1,
+		heartx=1,
+		hearty=1,
 		anim_speed=15,
 		anim_move1={40,42},
 		anim_move2={41,43},
@@ -229,6 +251,8 @@ function init_dinos()
 	dino2={
 		x=13,
 		y=1,
+		heartx=14,
+		hearty=1,
 		anim_speed=15,
 		anim_move1={12,14},
 		anim_move2={13,15},
@@ -241,6 +265,8 @@ function init_dinos()
 	dino3={
 		x=1,
 		y=13,
+		heartx=1,
+		hearty=13,
 		anim_speed=15,
 		anim_move1={8,10},
 		anim_move2={9,11},
@@ -253,6 +279,8 @@ function init_dinos()
 	dino4={
 		x=13,
 		y=13,
+		heartx=13,
+		hearty=13,
 		anim_speed=15,
 		anim_move1={44,46},
 		anim_move2={45,47},
@@ -289,6 +317,7 @@ end
 function place_egg(_dino)
 	mset(_dino.eggx,_dino.eggy,_dino.eggspr)
 	fset(_dino.eggspr,1,false)
+	_dino.hasegg=true
 end
 
 function is_adjacent(_x,_y,_dino)
@@ -297,12 +326,16 @@ function is_adjacent(_x,_y,_dino)
 end
 
 function draw_dinos()
+	map(0,0)
 	for _d=1,#dinos do
 		local _dino=dinos[_d]
 		mset(_dino.x,_dino.y,get_frame(_dino.anim_move1,_dino.anim_speed))
 		mset(_dino.x+1,_dino.y,get_frame(_dino.anim_move2,_dino.anim_speed))
 		mset(_dino.x,_dino.y+1,get_frame(_dino.anim_move3,_dino.anim_speed))
 		mset(_dino.x+1,_dino.y+1,get_frame(_dino.anim_move4,_dino.anim_speed))	
+		if _dino.hasegg then
+			spr(55,_dino.heartx*8,_dino.hearty*8)
+		end
 	end
 end
 
@@ -332,11 +365,49 @@ end
 --menu
 
 function draw_menu()
-	print()
+	local title="remorseful oviraptor"
+	local instr1="you're an oviraptor who"
+	local instr2="regrets stealing eggs"
+	local instr3="from your dino friends."
+	local instr4="to make amends, you'll"
+	local instr5="bring the eggs back to"
+	local instr6="them ♥."
+	local start="- press ❎ to start -"
+	local credits="made by marc duiker"
+	rectfill(0,0,127,127,5)
+	rect(2,2,125,125,7)
+	spr(get_frame(menu_dino.anim_move,menu_dino.anim_speed),menu_dino.x*8,menu_dino.y*8)
+	print(title,hcenter(title),30,11)
+	print(instr1,hcenter(instr1),45,7)
+	print(instr2)
+	print(instr3)
+	print("")
+	print(instr4)
+	print(instr5)
+	print(instr6)
+	print(start,hcenter(start)-2,95,11)
+	print(credits,hcenter(credits),110,9)
 end
 
 function update_menu()
+	menu_dino={
+		x=7,
+		y=1,
+		anim_speed=10,
+		anim_move={6,7}
+	}
 	
+	if btnp(❎) then
+		sfx(5)
+		_upd=update_game
+		_drw=draw_player
+	end
+end
+
+function update_game_over()
+	if btnp(❎) then
+		run()
+	end
 end
 
 function draw_game_over()
@@ -374,14 +445,14 @@ function hcenter(s)
   return 64-#s*2
 end
 __gfx__
-0000000000bbb0000bbb000000bbb0000bbb0000000000000000000000000000ffffffffffff337fffffffffffffffffffffffffffffffffffffffffffffffff
-000000000b7b0000b7b000000b7b0000b7b060000bbb00000000000000000000ffffffffffff3333ffffffffffff337fffffffffffffffffffffffffffffffff
-0070070008b300008b30000008b306008b367600b73000000000000000000000ffffffffffff3333ffffffffffff3333ffffffffffffffffffffffffffffffff
-0007700000b3000000b3000000b3676000b777008bb330000000000000000000ffffffffffffb3ffffffffffffff3333ffffffffffffffffffffffffffffffff
-000770000bbb30000bbb300b0bbb77700bb6760b0bbbb3b00000000000000000ffffffffffff33ffffffffffffffb3ffffffffff9ffffffffffffff99fffffff
-0070070000bbb33b00bbb3b000bb676b00bbb3b000bbbb0b0000000000000000ffffffffffffb3ffffffffffffffb3fffffffff9fffffffffffff999ffffffff
-0000000000bbbbb000bbbb0000bbbbb000bbbb00000b30000000000000000000ffffffffffff33ffffffffffffffb3fffffff999fffffffffff99799fff94fff
-00000000000b3000000b3000000b3000000b3000000000000000000000000000ffffffffffffb3ffffffffffffffb3ffffff9799fff94ffffff9999fff994fff
+0000000000bbb0000bbb000000bbb0000bbb00000000000000bbb00000bbb000ffffffffffff337fffffffffffffffffffffffffffffffffffffffffffffffff
+000000000b7b0000b7b000000b7b0000b7b060000bbb00000b7b00000b7b0000ffffffffffff3333ffffffffffff337fffffffffffffffffffffffffffffffff
+0070070008b300008b30000008b306008b367600b730000008c3000008b30000ffffffffffff3333ffffffffffff3333ffffffffffffffffffffffffffffffff
+0007700000b3000000b3000000b3676000b777008bb3300000b3000000c30000ffffffffffffb3ffffffffffffff3333ffffffffffffffffffffffffffffffff
+000770000bbb30000bbb300b0bbb77700bb6760b0bbbb3b00bcb30000bbb3000ffffffffffff33ffffffffffffffb3ffffffffff9ffffffffffffff99fffffff
+0070070000bbb33b00bbb3b000bb676b00bbb3b000bbbb0b00bbb33b00cbb33bffffffffffffb3ffffffffffffffb3fffffffff9fffffffffffff999ffffffff
+0000000000bbbbb000bbbb0000bbbbb000bbbb00000b300000bbbbb000bbbbb0ffffffffffff33ffffffffffffffb3fffffff999fffffffffff99799fff94fff
+00000000000b3000000b3000000b3000000b300000000000000b3000000b3000ffffffffffffb3ffffffffffffffb3ffffff9799fff94ffffff9999fff994fff
 ff5ffffffffff5fffffff5fff5ddd5fff5dddd5ff5ddd5ff5d5dd5d5ffffffffffffffffffff33ffffffffffffff33fffff9999fff994fffff94ff9ff994ffff
 f5d5ff5f55ff5d5555f55d5f5d5d5fffff5dd5ff5dd5dd5f5dddddd5fffffffffffffffffffb33fffffffffffffb33fffff94f9ff994fffff94fff499994ffff
 5ddd55d5dd55dddddd5dddd5f5dddd5ff5d5ddd55ddddd5fd5dddd5dfffffffffffffb3b3b3333fffffb3b3b3b3333ffff94ff499994ffffffffff949994ffff
@@ -399,13 +470,13 @@ fb7777bf0000b7b000000000f977779f0000979000000000cc7cccccccc7ccccffffffffcdffdcff
 f5b77b5f0000000000000000f597795f0000000000000000c7c7cccccc7c7cccffffffffcdfdcffffffffffcdfdcffffffffe2222222eff2ffffe2222222eff2
 ff5555ff0000000000000000ff5555ff0000000000000000fccccccffccccccfffffdccccdfdcfffffffdcccdfdcccfcffee22e222e22ee2ffee22e222e22ee2
 fffccfff0000000000000000fffeefff0000000000000000ffffffff00000000fffdcccccdccccfffffdcccccdccc7cfffe22222222222e2ffe22222222222e2
-ffc77cff000000000000c000ffe77eff000000000000e000fffbffbf00000000ffdcccccccdc7cfcffdcccccccdcccccf222e222e222e222f222e222e222e222
-ffc77cff00000c00000c7c00ffe77eff00000e00000e7e00f3b3fb3f00000000fdccccccccdccccffdcccccccccdcccc27222222222222222722222222222222
-fc7777cf0000c7c000077700fe7777ef0000e7e000077700ff3fb3ff00000000dccccccccccdcccfdcccccccccccffcc222222222222222ff22222222222222f
-fc7777cf00007770000c7c00fe7777ef00007770000e7e00fb3f3fff00000000cfccccccccccfccfcfccccccccccfffff2222222222222ff22222222222222ff
-fc7777cf0000c7c000000000fe7777ef0000e7e000000000ffb333ff00000000cffcccccccccffffcffcccccccccffffff22222222222fffff22222222222fff
-f5c77c5f0000000000000000f5e77e5f0000000000000000ff433fff00000000cfffcccccccffffffccfcccccccffffffff222222222fffffff222222222ffff
-ff5555ff0000000000000000ff5555ff0000000000000000f944449f00000000fcffccfffccfffffffffccfffccffffffff22fffff22fffffff22fffff22ffff
+ffc77cff000000000000c000ffe77eff000000000000e000fffbffbf08800880ffdcccccccdc7cfcffdcccccccdcccccf222e222e222e222f222e222e222e222
+ffc77cff00000c00000c7c00ffe77eff00000e00000e7e00f3b3fb3f88888888fdccccccccdccccffdcccccccccdcccc27222222222222222722222222222222
+fc7777cf0000c7c000077700fe7777ef0000e7e000077700ff3fb3ff88788888dccccccccccdcccfdcccccccccccffcc222222222222222ff22222222222222f
+fc7777cf00007770000c7c00fe7777ef00007770000e7e00fb3f3fff88888888cfccccccccccfccfcfccccccccccfffff2222222222222ff22222222222222ff
+fc7777cf0000c7c000000000fe7777ef0000e7e000000000ffb333ff08888880cffcccccccccffffcffcccccccccffffff22222222222fffff22222222222fff
+f5c77c5f0000000000000000f5e77e5f0000000000000000ff433fff00888800cfffcccccccffffffccfcccccccffffffff222222222fffffff222222222ffff
+ff5555ff0000000000000000ff5555ff0000000000000000f944449f00088000fcffccfffccfffffffffccfffccffffffff22fffff22fffffff22fffff22ffff
 __label__
 44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
 44444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444
@@ -556,3 +627,11 @@ __map__
 150809172626261726172626172c2d1500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 141819172626261717172626173c3d1300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 1612111012111112101210101210111600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+__sfx__
+0008000012010110000d0001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00080000220401e040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000800001e04022040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00080000120100d010080100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00080000120100d010120100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+091000001e050270001e0402005027000200400000020030230500000223040250500000025040000002503025000250102500025010250002500000000000000000000000000000000000000000000000000000
+4e0800001321406214002140820407204072040020400204002040020400204002040020400204002040020400204002040020400204002040020400204002040020400204002040020400204002040020400204
