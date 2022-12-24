@@ -117,10 +117,8 @@ function add_player()
 	p.anim_move={2,3}
 	p.isflipped=false
 	p.seq=nil
-	p.hashat=false
-	p.hatspr=nil
-	p.hat_anim=nil
 	p.isstill=true
+	p.sectionnr=0
 end
 
 function draw_player()
@@ -128,9 +126,6 @@ function draw_player()
 		spr(get_frame(p.anim_still,p.anim_speed),p.x*8+p.dx,p.y*8+p.dy,1,1,p.isflipped)
 	elseif not p.isstill then
 		spr(get_frame(p.anim_move,p.anim_speed),p.x*8+p.dx,p.y*8+p.dy,1,1,p.isflipped)
-	end
-	if p.hashat then
-		spr(get_frame(p.hat_anim,p.anim_speed),p.x*8+p.dx,p.y*8+p.dy,1,1,p.isflipped)
 	end
 end
 
@@ -157,36 +152,51 @@ function update_player(_dx,_dy)
 	
 	local destx=p.x+_dx
 	local desty=p.y+_dy
-	if p.isstill==false and isblocking(destx,desty,p.hashat) then
-		p.sx=_dx*8
-		p.sy=_dy*8
-		p.dx=0
-		p.dy=0
-		p.t=0
-		p.seq=seq_obstacle
-		_upd=update_player_move
-		sfx(1)
-	elseif p.isstill==false then
-		if iscollectable(destx,desty) then
-			sfx(2)
-			--update score?
-			mset(destx,desty,63)	
+	if p.isstill==false then 
+		if isobstacle(destx,desty) then
+			p.sx=_dx*8
+			p.sy=_dy*8
+			p.dx=0
+			p.dy=0
+			p.seq=seq_obstacle
+			sfx(1)
+		elseif iscollectable(destx,desty) then
+			sections[p.sectionnr].score+=1
+			if (sections[p.sectionnr].score == 4) then
+				sfx(3)
+				-- set next section
+				-- unlock door
+				if p.sectionnr < 3 then
+					p.sectionnr+=1
+				end
+				sections[p.sectionnr].isdooropen=true
+				--
+			else
+				sfx(2)
+			end
+			mset(destx,desty,63)
+			p.x+=_dx
+			p.y+=_dy
+			p.sx=-_dx*8
+			p.sy=-_dy*8
+			p.dx=p.sx
+			p.dy=p.sy
 		elseif isportal(destx,desty) then
-		 sfx(4)
-		 -- use p.respawnx
-		 -- use p.respawny
+			sfx(4)
+			p.x=sections[p.sectionnr].respawnx
+			p.y=sections[p.sectionnr].respawny
 		else
 		 -- nothing special
 		 sfx(0)
+		 p.x+=_dx
+		 p.y+=_dy
+		 p.sx=-_dx*8
+		 p.sy=-_dy*8
+		 p.dx=p.sx
+		 p.dy=p.sy
 		end
-		
-		p.x+=_dx
-		p.y+=_dy
-		p.sx=-_dx*8
-		p.sy=-_dy*8
-		p.dx=p.sx
-		p.dy=p.sy
 		p.t=0
+		
 		if p.isstill then
 			p.seq=seq_still
 		else
@@ -253,16 +263,6 @@ function seq_obstacle()
 	p.dy=p.sy*(1-p.t)
 end
 
-function isblocking(_x,_y,_hashat)
-	local isobs=isobstacle(_x,_y)
-
-	if isobs then
-		return true
-	end
-	
-	return false
-end
-
 function isobstacle(_x,_y)
 	local tile=mget(_x,_y)
 	return fget(tile,0)
@@ -278,89 +278,60 @@ function isportal(_x,_y)
 	return fget(tile,2)
 end
 
-function sethatanim(_x,_y)
-	local tile=mget(_x,_y)
-	p.hat_anim={tile+1,tile+2}
-end
 -->8
 -- map
 
 function init_map()
 	section1={
 		isdooropen=true,
-		doorx=nil,
-		doory=nil,
+		doorx=10,
+		doory=6,
+		opendoorspr=33,
 		hasplayed=false,
-		respawnx=nil,
-		respawny=3}
+		respawnx=10,
+		respawny=6,
+		score=0,
+		maxscore=4}
 	section2={
 		isdooropen=false,
-		doorx=nil,
-		doory=nil,
+		doorx=5,
+		doory=9,
+		opendoorspr=32,
 		hasplayed=false,
-		respawnx=nil,
-		respawny=3}
+		respawnx=5,
+		respawny=9,
+		score=0,
+		maxscore=4}
 	section3={
-		isd3oropen=false,
-		doo3x=nil,
-		doo3y=nil,
-		has3layed=false,
-		res3awnx=nil,
-		respawny=3}
+		isdooropen=false,
+		doorx=10,
+		doory=9,
+		opendoorspr=34,
+		hasplayed=false,
+		respawnx=10,
+		respawny=9,
+		score=0,
+		maxscore=4}
 	section4={
-		isd3oropen=false,
-		doo3x=nil,
-		doo3y=nil,
-		has3layed=false,
-		res3awnx=nil,
-		respawny=3}
+		isdooropen=false,
+		doorx=5,
+		doory=6,
+		opendoorspr=35,
+		hasplayed=false,
+		respawnx=5,
+		respawny=6,
+		score=0,
+		maxscore=4}
 	sections={section1,section2,section3,section4}
 end
 
-function try_deliver_hat(_x,_y,_hatspr)
-	local is_delivered=false
-	-- for _d=1,#dinos do
-	-- 	is_delivered=try_deliver(_x,_y,_hatspr,dinos[_d])
-	-- 	if is_delivered then 
-	-- 		score+=1
-	-- 		return true
-	-- 	end
-	-- end
-	return false
-end
-
-function try_deliver(_x,_y,_hatspr,_dino)
-	if _dino.eggspr==_hatspr and 
-		is_adjacent(_x,_y,_dino) then
-		place_hat(_dino)
-		return true
-	end
-	return false
-end
-
-function place_hat(_dino)
-	mset(_dino.eggx,_dino.eggy,_dino.eggspr)
-	fset(_dino.eggspr,1,false)
-	_dino.hashat=true
-end
-
-function is_adjacent(_x,_y,_dino)
-	return (abs(_x-_dino.x) <= 2 and
-		abs(_y-_dino.y) <= 2)
-end     
-
 function draw_map()
 	map(0,0)
-	--for _d=1,#dinos do
-	--	local _dino=dinos[_d]
-	--	mset(_dino.x,_dino.y,get_frame(_dino.anim_move1,_dino.anim_speed))
-	--	mset(_dino.x+1,_dino.y,get_frame(_dino.anim_move2,_dino.anim_speed))
-	--	mset(_dino.x,_dino.y+1,get_frame(_dino.anim_move3,_dino.anim_speed))
-	--	mset(_dino.x+1,_dino.y+1,get_frame(_dino.anim_move4,_dino.anim_speed))	
-	--	if _dino.hasegg then
-	--		spr(55,_dino.heartx*8,_dino.hearty*8)
-	--	end
-	--end
+	print(p.sectionnr, 10, 10, 0)
+	print(sections[0], 10, 26, 0)
+	if sections[p.sectionnr].isdooropen then
+		mset(sections[p.sectionnr].doorx,sections[p.sectionnr].doory,sections[p.sectionnr].opendoorspr)
+	end
 end
 -->8
 --map
