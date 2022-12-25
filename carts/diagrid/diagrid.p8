@@ -38,43 +38,50 @@ end
 --menu
 
 function draw_menu()
-	local title=""
-	local instr1=""
-	local instr2=""
-	local instr3=""
+	local title="next level: diagrid"
+	local instr1="hi everyone! i'm marc duiker"
+	local instr2="collect the items to learn"
+	local instr3="about my new role!"
 	local instr4=""
-	local instr5=""
-	local instr6=""
-	local start="- press ❎ to start -"
-	local credits="made by marc duiker"
-	rectfill(0,0,127,127,5)
+	local start="- press ❎/x to start -"
+	local credits="made by marc duiker, jan 2023"
+	rectfill(0,0,127,127,1)
 	rect(2,2,125,125,7)
-	spr(get_frame(menu_dino.anim_move,menu_dino.anim_speed),menu_dino.x*8,menu_dino.y*8)
-	print(title,hcenter(title),30,11)
+	spr(get_frame(menu.anim_move,menu.anim_speed),menu.x*8,menu.y*8)
+	print(title,hcenter(title),30,10)
 	print(instr1,hcenter(instr1),45,7)
-	print(instr2)
-	print(instr3)
 	print("")
-	print(instr4)
-	print(instr5)
-	print(instr6)
-	print(start,hcenter(start)-2,95,11)
-	print(credits,hcenter(credits),110,9)
+	print(instr2,hcenter(instr2),65,7)
+	print(instr3, hcenter(instr3),75,7)
+	print("")
+	print(start,hcenter(start)-2,95,10)
+	print(credits,hcenter(credits),110,12)
 end
 
 function update_menu()
-	menu_dino={
+	menu={
 		x=7,
 		y=1,
 		anim_speed=10,
-		anim_move={6,7}
+		anim_move={1,2,3,4,5,6}
 	}
 	
 	if btnp(❎) then
-		sfx(5)
+		sfx(3)
 		_upd=update_game
 		_drw=draw_player
 	end
+end
+
+function update_message()
+	local text1="thanks for playing!"
+	local text2="press ❎/x to play again"
+	local x1=hcenter(text2)-8
+	local x2=x1+#text2*4+14
+	rectfill(x1,40,x2,84,0)
+	rect(x1+2,42,x2-2,82,7)
+	print(text1,hcenter(text1),50,7)
+	print(text2,hcenter(text2),60,7)
 end
 
 function update_game_over()
@@ -84,16 +91,14 @@ function update_game_over()
 end
 
 function draw_game_over()
-	local text1="congratulations!"
-	local text2="you finished in "..flr(elapsed_time).." sec"
-	local text3="press ❎ to play again"
-	local x1=hcenter(text3)-8
-	local x2=x1+#text3*4+14
+	local text1="thanks for playing!"
+	local text2="press ❎/x to play again"
+	local x1=hcenter(text2)-8
+	local x2=x1+#text2*4+14
 	rectfill(x1,40,x2,84,0)
 	rect(x1+2,42,x2-2,82,7)
 	print(text1,hcenter(text1),50,7)
 	print(text2,hcenter(text2),60,7)
-	print(text3,hcenter(text3)-2,70,7)
 end
 
 function hcenter(s)
