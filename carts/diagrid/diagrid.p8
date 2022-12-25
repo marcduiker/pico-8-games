@@ -73,15 +73,54 @@ function update_menu()
 	end
 end
 
-function update_message()
-	local text1="thanks for playing!"
-	local text2="press ❎/x to play again"
-	local x1=hcenter(text2)-8
-	local x2=x1+#text2*4+14
+message1 ={
+	line1="Hi everyone, I'm joining Diagrid",
+	line2="as Sr Developer Advocate!",
+	line3="",
+	line4="",
+	action="press ❎/x to continue"
+}
+
+message2 ={
+	line1="I'll be wearing many hats ;)",
+	line2="primarily focussing on Dapr and",
+	line3="the amazing community around it.",
+	line4=nil,
+	action="press ❎/x to continue"
+}
+
+message3 ={
+	line1="Diagrid is working on products to make distributed application development even easier!",
+	line2="",
+	line3="",
+	line4=nil,
+	action="press ❎/x to continue"
+}
+
+message4 ={
+	line1="Connect with me if you\'re using Dapr, have feedback, or want to create something cool together! 💙",
+	line2="",
+	line3="",
+	line4=nil,
+	action="press ❎/x to continue"
+}
+
+function update_message_section(message)
+	local x1=hcenter(message.line1)-8
+	local x2=x1+#line1*4+14
 	rectfill(x1,40,x2,84,0)
 	rect(x1+2,42,x2-2,82,7)
-	print(text1,hcenter(text1),50,7)
-	print(text2,hcenter(text2),60,7)
+	print_message(message.line1, 50, 7)
+	print_message(message.line2, 60, 7)
+	print_message(message.line3, 70, 7)
+	print_message(message.line4, 80, 7)
+	print_message(message.action, 90, 10)
+end
+
+function print_message(text, x, color)
+	if #text > 0 then
+		print(text, hcenter(text), x, color)
+	end
 end
 
 function update_game_over()
