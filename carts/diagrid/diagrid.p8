@@ -214,12 +214,16 @@ function update_player(_dx,_dy)
 				sfx(3)
 				p.respawnx=p.section.respawnx
 				p.respawny=p.section.respawny
+				-- reset arrow tile for current section
+				mset(p.section.arrowx,p.section.arrowy,63)
 				if p.sectionnr < 4 then
 					p.sectionnr+=1
 					p.section=sections[p.sectionnr]
 				else
 					p.isgameover=true
 				end
+				-- place arrow tile for next section
+				mset(p.section.arrowx,p.section.arrowy,p.section.arrowspr)
 				p.section.isdooropen=true
 			else
 				sfx(2)
