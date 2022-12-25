@@ -19,8 +19,8 @@ function init_game()
 	target=4
 	score=0
 	btnbuffer=-1
-	_upd=update_menu
-	_drw=draw_menu
+	_upd=update_start_menu
+	_drw=draw_start_menu
 end
 
 function _update()
@@ -37,7 +37,7 @@ end
 -->8
 --menu
 
-function draw_menu()
+function draw_start_menu()
 	local title="next level: diagrid"
 	local instr1="hi everyone! i'm marc duiker"
 	local instr2="collect the items to learn"
@@ -58,7 +58,7 @@ function draw_menu()
 	print(credits,hcenter(credits),110,12)
 end
 
-function update_menu()
+function update_start_menu()
 	menu={
 		x=7,
 		y=1,
@@ -74,47 +74,57 @@ function update_menu()
 end
 
 message1 ={
-	line1="Hi everyone, I'm joining Diagrid",
-	line2="as Sr Developer Advocate!",
+	line1="i'm joining diagrid",
+	line2="as sr developer advocate!",
 	line3="",
 	line4="",
 	action="press ❎/x to continue"
 }
 
 message2 ={
-	line1="I'll be wearing many hats ;)",
-	line2="primarily focussing on Dapr and",
-	line3="the amazing community around it.",
-	line4=nil,
+	line1="i'll be wearing many hats ;)",
+	line2="primarily focussing on dapr",
+	line3="and the amazing community",
+	line4="around it",
 	action="press ❎/x to continue"
 }
 
 message3 ={
-	line1="Diagrid is working on products to make distributed application development even easier!",
-	line2="",
-	line3="",
-	line4=nil,
+	line1="diagrid is working on",
+	line2="products to make distributed",
+	line3="application development",
+	line4="even easier!",
 	action="press ❎/x to continue"
 }
 
 message4 ={
-	line1="Connect with me if you\'re using Dapr, have feedback, or want to create something cool together! ユか★▥",
-	line2="",
-	line3="",
-	line4=nil,
+	line1="connect with me if you're",
+	line2="using dapr, have feedback",
+	line3="or want to create something",
+	line4="cool together!",
 	action="press ❎/x to continue"
 }
+messages={message1,message2,message3,message4}
 
-function update_message_section(message)
-	local x1=hcenter(message.line1)-8
-	local x2=x1+#line1*4+14
-	rectfill(x1,40,x2,84,0)
-	rect(x1+2,42,x2-2,82,7)
-	print_message(message.line1, 50, 7)
-	print_message(message.line2, 60, 7)
-	print_message(message.line3, 70, 7)
-	print_message(message.line4, 80, 7)
-	print_message(message.action, 90, 10)
+function update_message_section()
+	if btnp(❎) then
+		p.messagenr+=1
+		p.message=messages[p.messagenr]
+		_upd=update_game
+		_drw=draw_player
+	end
+end
+
+function draw_message_section()
+	local x1=0
+	local x2=128
+	rectfill(x1,40,x2,100,1)
+	rect(x1+2,42,x2-2,98,7)
+	print_message(p.message.line1, 50, 7)
+	print_message(p.message.line2, 60, 7)
+	print_message(p.message.line3, 70, 7)
+	print_message(p.message.line4, 80, 7)
+	print_message(p.message.action, 90, 10)
 end
 
 function print_message(text, x, color)
@@ -132,10 +142,10 @@ end
 function draw_game_over()
 	local text1="thanks for playing!"
 	local text2="press ❎/x to play again"
-	local x1=hcenter(text2)-8
-	local x2=x1+#text2*4+14
-	rectfill(x1,40,x2,84,0)
-	rect(x1+2,42,x2-2,82,7)
+	local x1=0
+	local x2=128
+	rectfill(x1,40,x2,100,1)
+	rect(x1+2,42,x2-2,98,7)
 	print(text1,hcenter(text1),50,7)
 	print(text2,hcenter(text2),60,7)
 end
@@ -167,6 +177,8 @@ function add_player()
 	p.isgameover=false
 	p.respawnx=p.x
 	p.respawny=p.y
+	p.messagenr=1
+	p.message=message1
 end
 
 function draw_player()
@@ -212,19 +224,7 @@ function update_player(_dx,_dy)
 			p.section.score+=1
 			if (p.section.score == 4) then
 				sfx(3)
-				p.respawnx=p.section.respawnx
-				p.respawny=p.section.respawny
-				-- reset arrow tile for current section
-				mset(p.section.arrowx,p.section.arrowy,63)
-				if p.sectionnr < 4 then
-					p.sectionnr+=1
-					p.section=sections[p.sectionnr]
-				else
-					p.isgameover=true
-				end
-				-- place arrow tile for next section
-				mset(p.section.arrowx,p.section.arrowy,p.section.arrowspr)
-				p.section.isdooropen=true
+				completedsection()
 			else
 				sfx(2)
 			end
@@ -259,7 +259,26 @@ function update_player(_dx,_dy)
 		_upd=update_player_move
 	end
 	
-	check_score()
+	--check_score()
+end
+
+function completedsection()
+	p.respawnx=p.section.respawnx
+	p.respawny=p.section.respawny
+	p.message=messages[p.messagenr]
+	-- reset arrow tile for current section
+	mset(p.section.arrowx,p.section.arrowy,63)
+	if p.sectionnr < 4 then
+		p.sectionnr+=1
+		p.section=sections[p.sectionnr]
+	else
+		p.isgameover=true
+	end
+	-- place arrow tile for next section
+	mset(p.section.arrowx,p.section.arrowy,p.section.arrowspr)
+	p.section.isdooropen=true
+	_upd = update_message_section
+	_drw = draw_message_section
 end
 
 function check_score()
