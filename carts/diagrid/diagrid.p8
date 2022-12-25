@@ -118,7 +118,9 @@ function add_player()
 	p.isflipped=false
 	p.seq=nil
 	p.isstill=true
-	p.sectionnr=0
+	p.sectionnr=1
+	p.section=section1
+	p.isgameover=false
 end
 
 function draw_player()
@@ -152,6 +154,8 @@ function update_player(_dx,_dy)
 	
 	local destx=p.x+_dx
 	local desty=p.y+_dy
+	local respawnx=p.section.respawnx
+	local respawny=p.section.respawny
 	if p.isstill==false then 
 		if isobstacle(destx,desty) then
 			p.sx=_dx*8
@@ -161,16 +165,16 @@ function update_player(_dx,_dy)
 			p.seq=seq_obstacle
 			sfx(1)
 		elseif iscollectable(destx,desty) then
-			sections[p.sectionnr].score+=1
-			if (sections[p.sectionnr].score == 4) then
+			p.section.score+=1
+			if (p.section.score == 4) then
 				sfx(3)
-				-- set next section
-				-- unlock door
-				if p.sectionnr < 3 then
+				if p.sectionnr < 4 then
 					p.sectionnr+=1
+					p.section=sections[p.sectionnr]
+				else
+					p.isgameover=true
 				end
-				sections[p.sectionnr].isdooropen=true
-				--
+				p.section.isdooropen=true
 			else
 				sfx(2)
 			end
@@ -183,17 +187,17 @@ function update_player(_dx,_dy)
 			p.dy=p.sy
 		elseif isportal(destx,desty) then
 			sfx(4)
-			p.x=sections[p.sectionnr].respawnx
-			p.y=sections[p.sectionnr].respawny
+			p.x=respawnx
+			p.y=respawny
 		else
-		 -- nothing special
-		 sfx(0)
-		 p.x+=_dx
-		 p.y+=_dy
-		 p.sx=-_dx*8
-		 p.sy=-_dy*8
-		 p.dx=p.sx
-		 p.dy=p.sy
+			-- nothing special
+			sfx(0)
+			p.x+=_dx
+			p.y+=_dy
+			p.sx=-_dx*8
+			p.sy=-_dy*8
+			p.dx=p.sx
+			p.dy=p.sy
 		end
 		p.t=0
 		
@@ -283,6 +287,7 @@ end
 
 function init_map()
 	section1={
+		id=1,
 		isdooropen=true,
 		doorx=10,
 		doory=6,
@@ -293,6 +298,7 @@ function init_map()
 		score=0,
 		maxscore=4}
 	section2={
+		id=2,
 		isdooropen=false,
 		doorx=5,
 		doory=9,
@@ -303,6 +309,7 @@ function init_map()
 		score=0,
 		maxscore=4}
 	section3={
+		id=3,
 		isdooropen=false,
 		doorx=10,
 		doory=9,
@@ -313,6 +320,7 @@ function init_map()
 		score=0,
 		maxscore=4}
 	section4={
+		id=4,
 		isdooropen=false,
 		doorx=5,
 		doory=6,
@@ -327,10 +335,12 @@ end
 
 function draw_map()
 	map(0,0)
-	print(p.sectionnr, 10, 10, 0)
-	print(sections[0], 10, 26, 0)
-	if sections[p.sectionnr].isdooropen then
-		mset(sections[p.sectionnr].doorx,sections[p.sectionnr].doory,sections[p.sectionnr].opendoorspr)
+	--print("score:"..p.section.score, 10, 0, 0)
+	--print("nr:"..p.sectionnr, 10, 10, 0)
+	--print("id:"..p.section.id, 10, 18, 0)
+	--print("spr:"..p.section.opendoorspr, 10, 26, 0)
+	if p.section.isdooropen then
+		mset(p.section.doorx,p.section.doory,p.section.opendoorspr)
 	end
 end
 -->8
