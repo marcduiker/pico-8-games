@@ -103,21 +103,12 @@ message3 ={
 
 message4 ={
 	line1="connect with me if you're",
-	line2="using dapr, have feedback",
+	line2="using dapr, have feedback,",
 	line3="or want to create something",
 	line4="cool together!",
 	action="press ❎/x to continue"
 }
 messages={message1,message2,message3,message4}
-
-function update_message_section()
-	if btnp(❎) then
-		p.messagenr+=1
-		p.message=messages[p.messagenr]
-		_upd=update_game
-		_drw=draw_player
-	end
-end
 
 function draw_message_section()
 	local x1=0
@@ -138,14 +129,14 @@ function print_message(text, x, color)
 end
 
 function update_game_over()
-	if btnp(❎) then
+	if btnp(🅾️) then
 		run()
 	end
 end
 
 function draw_game_over()
 	local text1="thanks for playing!"
-	local text2="press ❎/x to play again"
+	local text2="press 🅾️/c to play again"
 	local x1=0
 	local x2=128
 	rectfill(x1,40,x2,100,1)
@@ -275,16 +266,14 @@ function completed_section()
 	if p.sectionnr < 4 then
 		p.sectionnr+=1
 		p.section=sections[p.sectionnr]
+		p.messagenr+=1
 		-- place arrow tile for next section
 		mset(p.section.arrowx,p.section.arrowy,p.section.arrowspr)
 		p.section.isdooropen=true
-		_upd = update_message_section
-		_drw = draw_message_section
 	else
 		p.isgameover=true
-		_upd=update_game_over
-		_drw=draw_game_over
 	end
+	_drw = draw_message_section
 end
 
 function update_player_move()
@@ -320,9 +309,14 @@ function dobtn(button)
 		run()
 	end
 	if button==5 then
-		-- continue
-		_upd=update_game
-		_drw=draw_player
+		if (p.isgameover) then
+			_upd=update_game_over
+			_drw=draw_game_over
+		else
+			-- continue
+			_upd=update_game
+			_drw=draw_player
+		end
 		return
 	end
 end
@@ -418,10 +412,6 @@ end
 
 function draw_map()
 	map(0,0)
-	--print("score:"..p.section.score, 10, 0, 0)
-	--print("nr:"..p.sectionnr, 10, 10, 0)
-	--print("id:"..p.section.id, 10, 18, 0)
-	--print("spr:"..p.section.opendoorspr, 10, 26, 0)
 	if p.section.isdooropen then
 		mset(p.section.doorx,p.section.doory,p.section.opendoorspr)
 	end
