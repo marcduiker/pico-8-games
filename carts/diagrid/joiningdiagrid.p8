@@ -43,24 +43,23 @@ end
 
 function draw_start_menu()
 	local title="next level: diagrid"
-	local instr1="hi everyone! i'm marc duiker."
-	local instr2="use the arrow keys to move"
-	local instr3="around and collect the items"
-	local instr4="to learn about my new role!"
-	local start="- press ❎/x to start -"
+	local line1="hi everyone! i'm marc duiker."
+	local line2="use the arrow keys to move"
+	local line3="around and collect the items"
+	local line4="to learn about my new role!"
+	local action="- press ❎/x to start -"
 	local credits="made by marc duiker, jan 2023"
 	rectfill(0,0,127,127,1)
 	rect(2,2,125,125,7)
 	spr(get_frame(menu.anim_move,menu.anim_speed),menu.x*8,menu.y*8)
 	spr(menu.leftspr, (menu.x-1)*8, menu.y*8)
 	spr(menu.rightspr, (menu.x+1)*8, menu.y*8)
-	print(title,hcenter(title),30,10)
-	print(instr1,hcenter(instr1),45,7)
-	print(instr2,hcenter(instr2),55,7)
-	print(instr3, hcenter(instr3),65,7)
-	print(instr4, hcenter(instr4),75,7)
-	print("")
-	print(start,hcenter(start)-2,95,10)
+	print_message(title,30,10)
+	print_message(line1,45,7)
+	print_message(line2,55,7)
+	print_message(line3,65,7)
+	print_message(line4,75,7)
+	print_message(action,95,10)
 	print(credits,hcenter(credits),110,12)
 end
 
@@ -82,9 +81,9 @@ function update_start_menu()
 end
 
 message1 ={
-	line1="i'm joining diagrid",
-	line2="as sr developer advocate!",
-	line3="",
+	line1="",
+	line2="i'm joining diagrid",
+	line3="as sr developer advocate!",
 	line4="",
 	action="press ❎/x to continue"
 }
@@ -99,7 +98,7 @@ message2 ={
 
 message3 ={
 	line1="diagrid creates products that",
-	line2="enables developers to build",
+	line2="enable developers to build",
 	line3="and run distributed systems",
 	line4="quickly and reliably.",
 	action="press ❎/x to continue"
@@ -154,21 +153,24 @@ end
 
 function draw_game_over()
 	local line1="thanks for playing!"
-	local line2="you can find me at"
+	local line2="you can find me at:"
 	local line3="twitter.com/marcduiker"
 	local line4="mstdn.social/@marcduiker"
 	local line5="github.com/marcduiker"
+	local line6="diagrid.io"
 	local action="press 🅾️/c to play again"
-	local x1=0
-	local x2=128
-	rectfill(x1,28,x2,106,1)
-	rect(x1+2,30,x2-2,104,7)
-	print_message(line1,38,10)
-	print_message(line2,50,7)
-	print_message(line3,60,7)
-	print_message(line4,70,7)
-	print_message(line5,80,7)
-	print_message(action,94,10)
+	rectfill(0,0,127,127,1)
+	rect(2,2,125,125,7)
+	spr(get_frame(menu.anim_move,menu.anim_speed),menu.x*8,menu.y*8)
+	spr(menu.leftspr, (menu.x-1)*8, menu.y*8)
+	spr(menu.rightspr, (menu.x+1)*8, menu.y*8)
+	print_message(line1,30,10)
+	print_message(line2,45,7)
+	print_message(line3,55,7)
+	print_message(line4,65,7)
+	print_message(line5,75,7)
+	print_message(line6,85,7)
+	print_message(action,105,10)
 end
 
 function hcenter(s)
