@@ -184,7 +184,7 @@ function add_player()
 	p.x=8
 	p.dx=0
 	p.sx=0
-	p.y=7
+	p.y=6
 	p.dy=0
 	p.sy=0
 	p.t=0
