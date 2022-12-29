@@ -138,18 +138,18 @@ function draw_message_section()
 	print_message(p.message.action, 90, 10)
 end
 
-function print_message(text, x, color)
+function print_message(text, y, color)
 	if #text > 0 then
-		print(text, hcenter(text), x, color)
+		print(text, hcenter(text), y, color)
 	end
 end
 
-previousindex=1
-index=1
+currentindex=1
+nextindex=1
 linkmenu = {
 	{1, "twitter.com/marcduiker", 1},
 	{2, "mstdn.social/@marcduiker", 0},
-	{3, "github.com/marcduiker", 0},
+	{3, "dapr.io", 0},
 	{4, "diagrid.io", 0},
 }
 
@@ -161,23 +161,25 @@ function update_game_over()
 		run()
 	elseif btnp(3) then
 		-- down
-		previousindex=getactivelink()
-		if previousindex == 4 then
-			index=1
+		sfx(3)
+		currentindex=getactivelink()
+		if currentindex == 4 then
+			nextindex=1
 		else
-			index+=1
+			nextindex+=1
 		end
 	elseif btnp(2) then
 		-- up
-		previousindex=getactivelink()
-		if previousindex == 1 then
-			index=4
+		sfx(3)
+		currentindex=getactivelink()
+		if currentindex == 1 then
+			nextindex=4
 		else
-			index-=1
+			nextindex-=1
 		end
 	end
-	linkmenu[previousindex][3]=0
-	linkmenu[index][3]=1
+	linkmenu[currentindex][3]=0
+	linkmenu[nextindex][3]=1
 end
 
 function getactivelink()
@@ -195,20 +197,23 @@ function draw_game_over()
 	rectfill(0,0,127,127,1)
 	rect(2,2,125,125,7)
 	spr(get_frame(menu.anim_move,menu.anim_speed),menu.x*8,menu.y*8)
-	spr(menu.leftspr, (menu.x-1)*8, menu.y*8)
-	spr(menu.rightspr, (menu.x+1)*8, menu.y*8)
+	spr(menu.leftspr,(menu.x-1)*8,menu.y*8)
+	spr(menu.rightspr,(menu.x+1)*8,menu.y*8)
 	print_message(line1,30,10)
-	local menux=45
+	print_message(line2,45,10)
+	local menuy=55
 	for link in all(linkmenu) do
 		if link[3]==0 then
 			-- regular
-			print_message(link[2],menux,7)
+			print_message(link[2],menuy,7)
 		else
 			-- selected
-			print_message(link[2],menux,11)
+			print_message(link[2],menuy,11)
+			spr(62,hcenter(link[2])-10,menuy-2)
 		end
-		menux+=10
+		menuy+=10
 	end
+	
 	print_message(action,105,10)
 end
 
@@ -548,10 +553,10 @@ ccccccccbbbbbbbbaaaaaaaaeeeeeeee777777777777777777777777777777777777777750755750
 1777777637777776977777762777777677777776777777767777777677777776777777767777777677777776776c67767fdf74364247f9f6777777767a977a96
 ccccccccbbbbbbbbaaaaaaaaeeeeeeee000000000000000000000000000000007777777777777777777777777777777700000000000000000000000077777777
 1111111c3333333b9999999a2222222e000000000000000000000000000000007cc1cc177bb3bb377aa9aa977ee2ee270003b000000b30000000000077777777
-1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e00000000000000000000000000000000ccccccc1bbbbbbb3aaaaaaa9eeeeeee2000b00000000b0000000330077777777
-1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e00000000000000000000000000000000ccccccc1bbbbbbb3aaaaaaa9eeeeeee2000b00000000b0000003bb3077777777
-1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e00000000000000000000000000000000ccccccc1bbbbbbb3aaaaaaa9eeeeeee200b0000000000b000003bb3077777777
-1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e000000000000000000000000000000007ccccc177bbbbb377aaaaa977eeeee27000b00000000b0000000330077777777
+1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e00000000000000000000000000000000ccccccc1bbbbbbb3aaaaaaa9eeeeeee2000b00000000b0000000000077777777
+1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e00000000000000000000000000000000ccccccc1bbbbbbb3aaaaaaa9eeeeeee2000b00000000b0000003330077777777
+1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e00000000000000000000000000000000ccccccc1bbbbbbb3aaaaaaa9eeeeeee200b0000000000b00003bbb3077777777
+1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e000000000000000000000000000000007ccccc177bbbbb377aaaaa977eeeee27000b00000000b0000003330077777777
 1c1c1c1c3b3b3b3b9a9a9a9a2e2e2e2e0000000000000000000000000000000077ccc17777bbb37777aaa97777eee277000b00000000b0000000000077777777
 1111111633333336999999962222222600000000000000000000000000000000777c1776777b3776777a9776777e27760003b000000b30000000000077777776
 666666666666666666666666000000000000000000000000000000000000000000000000cccccccccccccccccccccccccccccccccccccccc0000000000000000
