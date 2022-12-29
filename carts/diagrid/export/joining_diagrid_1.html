@@ -1,6 +1,7 @@
 ﻿<html><head>
 <title>PICO-8 Cartridge</title>
 <meta name="viewport" content="width=device-width, user-scalable=no">
+<script src="https://unpkg.com/pico8-gpio-listener@0.2.2/pico8-gpio-listener.js"></script>
 <script type="text/javascript">
 
 	// Default shell for PICO-8 0.2.2 (includes @weeble's gamepad mod 1.0)
@@ -632,7 +633,7 @@
 
 		}
 		e.type = "application/javascript";
-		e.src = "joiningdiagrid.js";
+		e.src = "joining_diagrid_1.js";
 		e.id = "e_script";
 		
 		document.body.appendChild(e); // load and run
@@ -944,6 +945,16 @@
 			el.webkitRequestFullScreen( Element.ALLOW_KEYBOARD_INPUT );
 		}
 	}
+	const customLinks=[
+		"https://twitter.com/marcduiker",
+		"https://mstdn.social/@marcduiker",
+		"https://dapr.io/",
+		"https://www.diagrid.io/"
+	];
+	var gpio = getP8Gpio();
+	var unsubscribe = gpio.subscribe(function(indices) {
+		window.open(customLinks[gpio[0]-1], '_blank');
+	});
 
 </script>
 

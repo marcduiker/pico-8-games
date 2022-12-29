@@ -156,7 +156,7 @@ linkmenu = {
 function update_game_over()
 	music(-1,1000)
 	if btnp(❎) then
-		poke(0x5f80, 0)
+		poke(0x5f80, getactivelink())
 	elseif btnp(🅾️) then
 		run()
 	elseif btnp(3) then
