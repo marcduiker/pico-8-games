@@ -213,8 +213,7 @@ function draw_game_over()
 			print_message(link[2],menuy,7)
 		else
 			-- selected
-			print_message(link[2],menuy,11)
-			spr(62,hcenter(link[2])-10,menuy-2)
+			print_message("❎ "..link[2],menuy,11)
 		end
 		menuy+=10
 	end
