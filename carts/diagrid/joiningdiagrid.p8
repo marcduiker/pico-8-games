@@ -45,8 +45,8 @@ function draw_start_menu()
 	local title="next level: diagrid"
 	local line1="hi everyone! i'm marc duiker."
 	local line2="use the arrow keys to move"
-	local line3="around and collect the items"
-	local line4="to learn about my new role!"
+	local line3="around and collect items to"
+	local line4="learn about my new role!"
 	local action="- press ❎/x to start -"
 	local credits="made by marc duiker, jan 2023"
 	rectfill(0,0,127,127,1)
