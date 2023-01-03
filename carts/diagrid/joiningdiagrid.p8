@@ -197,7 +197,7 @@ end
 
 function draw_game_over()
 	local line1="thanks for playing!"
-	local line2="you can find me at:"
+	local line2="connect with me & learn more:"
 	local action="press 🅾️/c to play again"
 	rectfill(0,0,127,127,1)
 	rect(2,2,125,125,7)
@@ -247,13 +247,12 @@ function add_player()
 	p.seq=seq_walk
 	p.sectionnr=1
 	p.section=section1
+	p.previoussection=nil
 	p.isgameover=false
 	p.respawnx=p.x
 	p.respawny=p.y
 	p.messagenr=1
 	p.message=message1
-	p.previousportalarrowx=0
-	p.previousportalarrowy=0
 	p.hashat=false
 	p.hatspr=nil
 end
@@ -330,7 +329,7 @@ function update_player(_dx,_dy)
 			p.x=p.respawnx
 			p.y=p.respawny
 			-- remove arrow tile for previous section
-			mset(p.previousportalarrowx,p.previousportalarrowy,63)
+			mset(p.previoussection.portalarrowx,p.previoussection.portalarrowy,63)
 			_upd=update_message_section
 			_drw=draw_message_section
 		else
@@ -353,10 +352,11 @@ function completed_section()
 	p.respawnx=p.section.respawnx
 	p.respawny=p.section.respawny
 	p.message=messages[p.messagenr]
+	-- close current door to ensure player goes through the portal
+	p.section.isdooropen=false
 	-- place arrow tile for portal
 	mset(p.section.portalarrowx,p.section.portalarrowy,p.section.arrowspr)
-	p.previousportalarrowx=p.section.portalarrowx
-	p.previousportalarrowy=p.section.portalarrowy
+	p.previoussection=p.section
 	-- reset arrow tile for current section
 	mset(p.section.arrowx,p.section.arrowy,63)
 	if p.sectionnr < 4 then
@@ -461,6 +461,7 @@ function init_map()
 		doorx=10,
 		doory=6,
 		opendoorspr=33,
+		closeddoorspr=21,
 		arrowx=9,
 		arrowy=6,
 		arrowspr=37,
@@ -481,6 +482,7 @@ function init_map()
 		doorx=5,
 		doory=9,
 		opendoorspr=32,
+		closeddoorspr=20,
 		arrowx=6,
 		arrowy=9,
 		arrowspr=36,
@@ -501,6 +503,7 @@ function init_map()
 		doorx=10,
 		doory=9,
 		opendoorspr=34,
+		closeddoorspr=22,
 		arrowx=9,
 		arrowy=9,
 		arrowspr=38,
@@ -521,6 +524,7 @@ function init_map()
 		doorx=5,
 		doory=6,
 		opendoorspr=35,
+		closeddoorspr=23,
 		arrowx=6,
 		arrowy=6,
 		arrowspr=39,
@@ -543,6 +547,10 @@ function draw_map()
 	if p.section.isdooropen then
 		mset(p.section.doorx,p.section.doory,p.section.opendoorspr)
 	end
+
+	if p.previoussection ~= nil and p.previoussection.isdooropen == false then
+		mset(p.previoussection.doorx,p.previoussection.doory,p.previoussection.closeddoorspr)
+	end
 	mset(section1.portalx, section1.portaly, section1.portalspr[section1.portalnr])
 	mset(section2.portalx, section2.portaly, section2.portalspr[section2.portalnr])
 	mset(section3.portalx, section3.portaly, section3.portalspr[section3.portalnr])
@@ -563,10 +571,10 @@ __gfx__
 00000000000044400000000000004440000044400000444000004440000000007777777777777777777777777777777777777777777777777777777777777777
 000000000004440000004440000444000004440000c7fc7000044400000000007777777777777777777777777777777777771777777737777777277777aaaa77
 00700700000cfc00000444000004fc00000cfc0000cc7cc0000cfc000000000077c1117777b3337777a9997777e222777c7717177b7737377e7727277aaaaaa7
-00077000000444000004fc0000004400000474000f04740f000484000000000077c1117777b3337777a9997777e22277c7771771b7773773e777277279aaaa97
+00077000000444000004fc000000440000047400000474000f04840f0000000077c1117777b3337777a9997777e22277c7771771b7773773e777277279aaaa97
 000770000094449000004400000994000094449000944490009444900000000077c1117777b3337777a9997777e22277c77c7771b77b7773e77e777279999997
-0070070000f999f000009400000f100000f999f0000999000f09990f0000000077c1117777b3337777a9997777e222777c7c77177b7b77377e7e772779999997
-000000000001010000019f000001010000010100000101000001010000000000c1111111b3333333a9999999e2222222777c7777777b7777777e777779999997
+0070070000f999f000009400000f100000f999f00f09990f0009990000000000c1111111b3333333a9999999e22222227c7c77177b7b77377e7e772779999997
+000000000001010000019f00000101000001010000010100000101000000000077777777777777777777777777777777777c7777777b7777777e777779999997
 00000000000202000020002000020200000202000002020000020200000000007777777677777776777777767777777677777776777777767777777677999976
 ccccccccbbbbbbbbaaaaaaaaeeeeeeeeccccccccbbbbbbbbaaaaaaaaeeeeeeee7773377777777777777777777cccccc771c77c1773b77b3779a77a9772e77e27
 1555555c3555555b9555555a2555555e1111111c3333333b9999999a2222222e773bb3777773b77777888877c777777c7c7777c77b7777b77a7777a77e7777e7
