@@ -16,6 +16,7 @@ end
 function init_game()
 	music(0,1000)
 	init_map()
+	init_bugs(levels[1])
 	add_player()
 	dirx={-1,1,0,0}
 	diry={0,0,-1,1}
@@ -114,7 +115,7 @@ message4 ={
 }
 messages={message1,message2,message3,message4}
 
-function update_message_section()
+function update_message_level()
 	if btnp(❎) then
 		if p.isgameover then
 			_upd=update_game_over
@@ -127,7 +128,7 @@ function update_message_section()
 	end
 end
 
-function draw_message_section()
+function draw_message_level()
 	local x1=0
 	local x2=128
 	rectfill(x1,30,x2,114,0)
@@ -229,10 +230,12 @@ end
 
 function add_player()
 	p={}
-	p.x=3
+	p.levelnr=1
+	p.level=level1
+	p.x=p.level.respawnx
 	p.dx=0
 	p.sx=0
-	p.y=3
+	p.y=p.level.respawny
 	p.dy=0
 	p.sy=0
 	p.t=0
@@ -245,9 +248,7 @@ function add_player()
 	p.isjumping=false
 	p.isflipped=false
 	p.seq=seq_walk
-	p.sectionnr=1
-	p.section=section1
-	p.previoussection=nil
+	p.previouslevel=nil
 	p.isgameover=false
 	p.respawnx=p.x
 	p.respawny=p.y
@@ -272,8 +273,8 @@ function draw_player()
 end
 
 function draw_score()
-	spr(section1.scorespr, 110, 0)
-	print(p.section.score, 120, 2, 10)
+	spr(level1.scorespr, 110, 0)
+	print(p.level.score, 120, 2, 10)
 end
 
 function update_game()
@@ -310,9 +311,9 @@ function update_player(_dx,_dy)
 			_upd=update_player_move
 		elseif iscollectable(destx,desty) then
 			if isscore(destx,desty) then
-				p.section.score+=1
+				p.level.score+=1
 			end
-			if p.section.score == p.section.maxscore then
+			if p.level.score==p.level.maxscore then
 				sfx(3)
 				collection_complete()
 			else
@@ -322,7 +323,7 @@ function update_player(_dx,_dy)
 			if ishat(destx,desty) then
 				p.hashat=true
 				p.hatspr=getsmallhat(mget(destx,desty))
-				p.section.serverspr=p.section.servertileopen
+				p.level.serverspr=p.level.servertileopen
 			end
 			mset(destx,desty,63)
 			p.x+=_dx
@@ -332,11 +333,11 @@ function update_player(_dx,_dy)
 			p.dx=p.sx
 			p.dy=p.sy
 			_upd=update_player_move
-		elseif isendofsection(destx,desty) then
+		elseif isendoflevel(destx,desty) then
 			sfx(5)
 			-- move to next level	
-			_upd=update_message_section
-			_drw=draw_message_section
+			_upd=update_message_level
+			_drw=draw_message_level
 		else
 			-- nothing special
 			sfx(0)
@@ -354,21 +355,21 @@ function update_player(_dx,_dy)
 end
 
 function collection_complete()
-	p.section.isdooropen=true
+	p.level.isdooropen=true
 end
 
-function completed_section()
-	p.respawnx=p.section.respawnx
-	p.respawny=p.section.respawny
+function completed_level()
+	p.respawnx=p.level.respawnx
+	p.respawny=p.level.respawny
 	p.message=messages[p.messagenr]
 	-- close current door to ensure player goes through the portal
-	p.section.isdooropen=false
-	p.previoussection=p.section
-	if p.sectionnr < 4 then
-		p.sectionnr+=1
-		p.section=sections[p.sectionnr]
+	p.level.isdooropen=false
+	p.previouslevel=p.level
+	if p.levelnr < 4 then
+		p.levelnr+=1
+		p.level=levels[p.levelnr]
 		p.messagenr+=1
-		p.section.isdooropen=true
+		p.level.isdooropen=true
 	else
 		p.isgameover=true
 	end
@@ -439,7 +440,7 @@ end
 -- map
 
 function init_map()
-	section1={
+	level1={
 		id=1,
 		camerax=16*8*0,
 		cameray=0,
@@ -456,21 +457,21 @@ function init_map()
 		servertileopen=tiles.server_blue_green,
 		serverspr=tiles.server_blue_red,
 		hasplayed=false,
-		respawnx=7,
-		respawny=8,
+		respawnx=2,
+		respawny=3,
 		score=0,
 		scorespr=56,
 		maxscore=12,
-		bug1x=13,
-		bug1y=4,
-		bug1dir=0,
-		bug2x=2,
-		bug2y=7,
+		bug1x=1,
+		bug1y=7,
+		bug1dir=1,
+		bug2x=10,
+		bug2y=3,
 		bug2dir=3,
-		bug3x=10,
-		bug3y=12,
+		bug3x=14,
+		bug3y=11,
 		bug3dir=1}
-	section2={
+	level2={
 		id=2,
 		isdooropen=false,
 		doorx=5,
@@ -491,7 +492,7 @@ function init_map()
 		portaly=12,
 		portalnr=1,
 		portalspr={73,74,75,76,77}}
-	section3={
+	level3={
 		id=3,
 		isdooropen=false,
 		doorx=10,
@@ -512,7 +513,7 @@ function init_map()
 		portaly=12,
 		portalnr=1,
 		portalspr={105,106,107,108,109}}
-	section4={
+	level4={
 		id=4,
 		isdooropen=false,
 		doorx=5,
@@ -533,12 +534,13 @@ function init_map()
 		portaly=3,
 		portalnr=1,
 		portalspr={121,122,123,124,125}}
-	sections={section1,section2,section3,section4}
+	levels={level1,level2,level3,level4}
 end
 
 tiles={
 	server_blue_red=71,
-	server_blue_green=73
+	server_blue_green=73,
+	floor=63
 }
 
 local tile_types={
@@ -552,7 +554,7 @@ local tile_types={
 	anim_state_2=7
 }
 
-local speed={
+speed={
 	slow=30,
 	medium=15,
 	fast=7
@@ -560,24 +562,27 @@ local speed={
 
 function draw_map()
 	map(0,0)
-	camera(p.section.camerax,p.section.cameray)
+	camera(p.level.camerax,p.level.cameray)
  draw_tiles()
  if t%speed.medium==0 then
  	animate_tiles()
  end
+ if t%speed.fast==0 then
+ 	move_bugs()
+ end
 end
 
 function draw_tiles()
-	if p.section.isdooropen then
-		mset(p.section.doorx,p.section.doory,p.section.opendoorspr)
+	if p.level.isdooropen then
+		mset(p.level.doorx,p.level.doory,p.level.opendoorspr)
 	end
 	
-	mset(p.section.serverx,p.section.servery,p.section.serverspr)
+	mset(p.level.serverx,p.level.servery,p.level.serverspr)
 end
 
 function animate_tiles()
-	for x=p.section.mapx,p.section.mapx+15 do
-		for y=p.section.mapy,p.section.mapy+15 do
+	for x=p.level.mapx,p.level.mapx+15 do
+		for y=p.level.mapy,p.level.mapy+15 do
 			if is_anim_state_1(x,y) then
 				swap_tiles(x,y)
 			elseif is_anim_state_2(x,y) then
@@ -609,7 +614,7 @@ function unswap_tiles(x,y)
 	mset(x,y,tile-1)
 end
 
-function isendofsection(_x,_y)
+function isendoflevel(_x,_y)
 	local tile=mget(_x,_y)
 	return fget(tile,tile_types.server)
 end
@@ -647,6 +652,66 @@ end
    
 function rndint(_min, _max)
 	return flr(_min+rnd(_max-_min))
+end
+-->8
+-- bugs
+
+local x_movements={-1,1,0,0}
+local y_movements={0,0,-1,1}
+local reverse_directions={1,0,3,2}
+
+local bug1={x=nil,y=nil,dir=nil,tile=nill}
+local bug2={x=nil,y=nil,dir=nil,tile=nill}
+local bug3={x=nil,y=nil,dir=nil,tile=nill}
+
+local bugs={bug1,bug2,bug3}
+local bugs_anim={128,129}
+
+function init_bugs(level)
+	bug1.x=level.bug1x
+	bug1.y=level.bug1y
+	bug1.dir=level.bug1dir
+	bug1.tile=tiles.floor
+	bug2.x=level.bug2x
+	bug2.y=level.bug2y
+	bug2.dir=level.bug2dir
+	bug2.tile=tiles.floor
+	bug3.x=level.bug3x
+	bug3.y=level.bug3y
+	bug3.dir=level.bug3dir
+	bug3.tile=tiles.floor
+end
+
+function move_bugs()
+	for bug in all(bugs) do
+		move_bug(bug)
+	end
+end
+
+function move_bug(bug)
+	if (not try_swap_and_move(bug)) then
+		bug.dir=reverse_directions[bug.dir+1]
+		try_swap_and_move(bug)
+	end
+end
+
+function try_swap_and_move(bug)
+	local new_x=bug.x+x_movements[bug.dir+1]
+	local new_y=bug.y+y_movements[bug.dir+1]
+	if (not isobstacle(new_x, new_y) and not isbug(new_x,new_y)) then
+		swap_tiles_with(bug,new_x,new_y)
+		bug.x=new_x
+		bug.y=new_y
+		return true
+	end
+	return false
+end
+
+function swap_tiles_with(bug,x2,y2)
+	local tile=mget(bug.x,bug.y)
+	mset(bug.x,bug.y,bug.tile)
+	bug.tile=mget(x2,y2)
+	mset(x2,y2,get_frame(bugs_anim,speed.fast))
 end
 __gfx__
 00000000000ccc000000ccc00000ccc0000ccc00000ccc00000ccc00000000007777777777777777777777777777777777777777777777777777777777777777
@@ -713,14 +778,14 @@ ccccccccbbbbbbbbaaaaaaaaeeeeeeee000000000000000000000000000000000000000000000000
 01cccc00c111111100000000000000000000000000000000000000000000000000000000000000000000000072eeee77772eee77000000000000000000000000
 001cc00000000000000000000000000000000000000000000000000000000000000000000000000000000000772ee7777772e777000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000007777777677777776000000000000000000000000
-00666000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-06777600006660000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-06272600067776000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-06777600062726000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-06777600067776000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-06777600067776000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-00000000677777600000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-05555500555555500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77666777777777770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+76777677776667770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+76272677767776770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+76777677762726770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+76777677767776770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+76777677767776770000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+77777777677777670000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+75555576555555560000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __label__
 eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 2222222e2222222e2222222e2222222e2222222e2222222e2222222e2222222e3333333b3333333b3333333b3333333b3333333b3333333b3333333b3333333b
@@ -862,7 +927,7 @@ __map__
 303f3f3f30303030303030303f3f3f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 303f4b6c303f3f3f3f3f3f306b7c3f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 303f7c5b303f3f4445463f305c4b3f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-303f3f3f303f3f2c2d2e3f303f3f3f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+30803f3f303f3f2c2d2e3f303f3f3f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 303f3030303f473f3f3f3f3030303f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 303f303f3f3f3f3f3f3f3f3f3f303f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 303f3030303030103030303030303f3000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
