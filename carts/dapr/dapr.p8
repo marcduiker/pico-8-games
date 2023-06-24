@@ -312,7 +312,7 @@ function update_player(_dx,_dy)
 			if isscore(destx,desty) then
 				p.section.score+=1
 			end
-			if (p.section.score == p.section.maxscore) then
+			if p.section.score == p.section.maxscore then
 				sfx(3)
 				collection_complete()
 			else
@@ -332,10 +332,9 @@ function update_player(_dx,_dy)
 			p.dx=p.sx
 			p.dy=p.sy
 			_upd=update_player_move
-		elseif isportal(destx,desty) then
+		elseif isendofsection(destx,desty) then
 			sfx(5)
-			p.x=p.respawnx
-			p.y=p.respawny	
+			-- move to next level	
 			_upd=update_message_section
 			_drw=draw_message_section
 		else
@@ -420,26 +419,6 @@ function seq_obstacle()
 	p.dy=p.sy*(1-p.t)
 end
 
-function isobstacle(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,0)
-end
-
-function iscollectable(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,1)
-end
-
-function isscore(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,2)
-end
-
-function ishat(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,3)
-end
-
 hats = {
 	{8, 24},
 	{9, 25},
@@ -455,10 +434,6 @@ function getsmallhat(largehatspr)
 	end
 end
 
-function isportal(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,2)
-end
 
 -->8
 -- map
@@ -634,6 +609,35 @@ function unswap_tiles(x,y)
 	mset(x,y,tile-1)
 end
 
+function isendofsection(_x,_y)
+	local tile=mget(_x,_y)
+	return fget(tile,tile_types.server)
+end
+
+function isobstacle(_x,_y)
+	local tile=mget(_x,_y)
+	return fget(tile,tile_types.wall)
+end
+
+function iscollectable(_x,_y)
+	local tile=mget(_x,_y)
+	return fget(tile,tile_types.collectable)
+end
+
+function isscore(_x,_y)
+	local tile=mget(_x,_y)
+	return fget(tile,tile_types.score)
+end
+
+function ishat(_x,_y)
+	local tile=mget(_x,_y)
+	return fget(tile,tile_types.hat)
+end
+
+function isbug(_x,_y)
+	local tile=mget(_x,_y)
+	return fget(tile,tile_types.bug)
+end
 -->8
 -- tools
 
@@ -848,7 +852,7 @@ ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccaaaaaaaaaaaaaaaa
 11111116111111161111111611111116111111161111111611111116111111169999999699999996999999969999999699999996999999969999999699999996
 
 __gff__
-00000000000000000a0a0a0a02020202010101010000000000000000000000000000000000000000000000000101010201010101000000000002020200000000000000418141815191418146860000000000000001418151914181468600000000000000000000000000004686000000000a0000000000000000004686000000
+00000000000000000a0a0a0a02020202010101010000000000000000000000000000000000000000000000000101010201010101000000000002020200000000000000418141815191519146860000000000000001418151915191468600000000000000000000000000004686000000000a0000000000000000004686000000
 60a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 __map__
 6363630000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
