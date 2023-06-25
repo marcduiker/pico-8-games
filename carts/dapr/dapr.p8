@@ -255,9 +255,7 @@ function add_player()
 	p.seq=seq_walk
 	p.previouslevel=nil
 	p.ishit=false
-	p.isinvincible=false
-	p.hittimer=0
-	p.hittimeout=60
+	p.thit=0
 	p.isgameover=false
 	p.respawnx=p.x
 	p.respawny=p.y
@@ -316,17 +314,12 @@ function update_player(_dx,_dy)
 	
 	local destx=p.x+_dx
 	local desty=p.y+_dy
-	if p.ishit and not (p.hittimer%p.hittimeout==0) then
-		p.hittimer+=1
-	elseif p.ishit and (p.hittimer%p.hittimeout==0) then 
+	if p.thit%60==0 then
 		p.ishit=false
-		p.isinvincible=false
-		p.hittimer=0
+		p.thit=0
 	end
-	if isbug(destx,desty) and not p.isinvincible then
+	if isbug(destx,desty) and not p.ishit then
 			p.ishit=true
-			p.isinvincible=true
-			p.hittimer+=1
 			sfx(6)
 			if p.lives > 1 then
 				p.lives-=1
@@ -335,6 +328,7 @@ function update_player(_dx,_dy)
 				p.isgameover=true
 			end
 			obstacle_move(_dx,_dy)
+			_upd=update_player_move
 	end
 	if p.isstill==false then 
 		if isobstacle(destx,desty) then
@@ -374,6 +368,11 @@ function update_player(_dx,_dy)
 			_upd=update_player_move
 		end
 		p.t=0
+	end
+	if p.ishit then
+		p.thit+=1
+	else 
+		p.thit=0
 	end
 end
 
