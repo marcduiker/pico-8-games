@@ -62,7 +62,7 @@ function draw_start_menu()
 	print_message(line5,67,1)
 	print_message(line6,75,1)
 	print_message(line7,83,1)
-	print_message(action,100,8)
+	print_message(action,100,11)
 	print(credits,hcenter(credits),115,12)
 end
 
@@ -73,7 +73,9 @@ function draw_outline()
 end
 
 function draw_header()
-	for x=1,13 do
+	spr(tiles.bluewall,1*8,menu.py*8)
+	spr(tiles.bluewall,13*8,menu.py*8)
+	for x=2,12 do
 		spr(tiles.floor,x*8,menu.py*8)
 	end
 	spr(get_frame(menu.anim_move,menu.anim_speed),menu.px*8,menu.py*8)
@@ -149,7 +151,7 @@ function draw_message_level()
 	local x2=128
 	rectfill(x1,30,x2,114,0)
 	rect(x1+2,32,x2-2,112,11)
-	spr(get_frame(menu.anim_talk,menu.anim_speed), menu.x*8, 40)
+	spr(get_frame(menu.anim_move,menu.anim_speed), menu.px*8, 40)
 	if p.hashat then
 		spr(p.hatspr,menu.x*8,33)
 	end
@@ -157,7 +159,7 @@ function draw_message_level()
 	print_message(p.message.line2, 64, 7)
 	print_message(p.message.line3, 74, 7)
 	print_message(p.message.line4, 84, 7)
-	print_message(p.message.action, 100, 10)
+	print_message(p.message.action, 100, 11)
 end
 
 function print_message(text, y, color)
@@ -213,29 +215,31 @@ function getactivelink()
 end
 
 function draw_game_over()
-	local line1="thanks for playing!"
-	local line2="connect with me & learn more:"
-	local action="press 🅾️/c to play again"
-	rectfill(0,0,127,127,1)
-	rect(2,2,125,125,7)
-	spr(get_frame(menu.anim_move,menu.anim_speed),menu.x*8,menu.y*8)
-	spr(menu.leftspr,(menu.x-1)*8,menu.y*8)
-	spr(menu.rightspr,(menu.x+1)*8,menu.y*8)
-	print_message(line1,30,10)
-	print_message(line2,45,10)
-	local menuy=55
+	local title="! game over !"
+	local line1="uh oh, what happened?"
+	local line2="don't worry, we've applied"
+	local line3="a resiliency policy so you"
+	local line4="can retry."
+	local action="- press 🅾️/c to play again -"
+	draw_outline()
+	draw_header()
+	print_message(title,23,12)
+	print_message(line1,35,1)
+	print_message(line2,43,1)
+	print_message(line3,51,1)
+	print_message(line4,59,1)
+	print_message(action,72,11)
+	local menuy=90
 	for link in all(linkmenu) do
 		if link[3]==0 then
 			-- regular
-			print_message(link[2],menuy,7)
+			print_message(link[2],menuy,0)
 		else
 			-- selected
 			print_message("❎ "..link[2],menuy,11)
 		end
-		menuy+=10
+		menuy+=8
 	end
-	
-	print_message(action,105,10)
 end
 
 function hcenter(s)
@@ -354,6 +358,9 @@ function update_player(_dx,_dy)
 			else
 				p.lives-=1
 				p.isgameover=true
+				_drw=draw_game_over
+				_upd=update_game_over
+				return
 			end
 			hit_move(_dx,_dy)
 			_upd=update_player_move
@@ -635,6 +642,7 @@ tiles={
 	server_green_off=87,
 	server_green_on=89,
 	floor=63,
+	bluewall=48,
 	menuscore=112,
 	menuhat=113
 }
