@@ -43,35 +43,52 @@ end
 
 function draw_start_menu()
 	local title="dapr - the game"
-	local line1="hi everyone! i'm marc duiker."
-	local line2="use the arrow keys to move"
-	local line3="around and collect items to"
-	local line4="learn about my new role!"
-	local action="- press ❎/x to start -"
-	local credits="made by marc duiker, jan 2023"
-	rectfill(0,0,127,127,1)
-	rect(2,2,125,125,7)
-	spr(get_frame(menu.anim_move,menu.anim_speed),menu.x*8,menu.y*8)
-	spr(menu.leftspr, (menu.x-1)*8, menu.y*8)
-	spr(menu.rightspr, (menu.x+1)*8, menu.y*8)
-	print_message(title,30,10)
-	print_message(line1,45,7)
-	print_message(line2,55,7)
-	print_message(line3,65,7)
-	print_message(line4,75,7)
-	print_message(action,95,10)
-	print(credits,hcenter(credits),110,12)
+	local line1="you're a developer helping"
+	local line2="teams to build distributed"
+	local line3="applications. collect the hat"
+	local line4="and the coins to learn about"
+	local line5="dapr and help the teams be"
+	local line6="successfull. good luck and"
+	local line7="avoid the ghosts!"
+	local action="- ❎/x to start -"
+	local credits="made by marc duiker, jun 2023"
+	draw_outline() 
+	draw_header()
+	print_message(title,23,12)
+	print_message(line1,35,1)
+	print_message(line2,43,1)
+	print_message(line3,51,1)
+	print_message(line4,59,1)
+	print_message(line5,67,1)
+	print_message(line6,75,1)
+	print_message(line7,83,1)
+	print_message(action,100,8)
+	print(credits,hcenter(credits),115,12)
+end
+
+
+function draw_outline()
+	rectfill(0,0,127,127,7)
+	rect(2,2,125,125,14) 
+end
+
+function draw_header()
+	for x=1,13 do
+		spr(tiles.floor,x*8,menu.py*8)
+	end
+	spr(get_frame(menu.anim_move,menu.anim_speed),menu.px*8,menu.py*8)
+	spr(get_frame(menu.anim_coin,menu.anim_speed),(menu.px-2)*8, menu.py*8)
+	spr(get_frame(menu.anim_hat,menu.anim_speed),(menu.px+2)*8, menu.py*8)
 end
 
 function update_start_menu()
 	menu={
-		x=7,
-		y=1,
+		px=7,
+		py=1,
 		anim_speed=10,
-		anim_move={1,2,3,4,5,6},
-		anim_talk={1,4},
-		leftspr=60,
-		rightspr=61
+		anim_move={1,2,3,4,5,6,7},
+		anim_coin={75,76},
+		anim_hat={8,9}
 	}
 	
 	if btnp(❎) then
@@ -338,7 +355,7 @@ function update_player(_dx,_dy)
 				p.lives-=1
 				p.isgameover=true
 			end
-			obstacle_move(_dx,_dy)
+			hit_move(_dx,_dy)
 			_upd=update_player_move
 	end
 	if p.isstill==false then 
@@ -397,6 +414,14 @@ function move(_dx, _dy)
 end
 
 function obstacle_move(_dx, _dy)
+	p.sx=_dx*8
+	p.sy=_dy*8
+	p.dx=0
+	p.dy=0
+	p.seq=seq_obstacle
+end
+
+function hit_move(_dx, _dy)
 	p.sx=_dx*8
 	p.sy=_dy*8
 	p.dx=0
@@ -610,7 +635,8 @@ tiles={
 	server_green_off=87,
 	server_green_on=89,
 	floor=63,
-	menuscore=112
+	menuscore=112,
+	menuhat=113
 }
 
 local tile_types={
@@ -787,7 +813,7 @@ __gfx__
 0070070000cfff0000ccff0000ccff000027f2700027f27000cfff0000cccc0077c1117777c1117700000000000000007c7717177b7737377e7727277aaaaaa7
 0007700000c2f20000cff20000cff2000022f2200022f22000c2f20000cfff0077c1117777c111770000000000000000c7771771b7773773e777277279aaaa97
 000770000c0fff000c0fff000c0fff000f0f7f0f0c0f7f0000cfff0000c2f20077c11177c11111110000000000000000c77c7771b77b7773e77e777279999997
-0070070000feeef0000eee00000eee0000eeeee00feeeeef00feeef00c0fff00711111117777777700000000000000007c7c77177b7b77377e7e772779999997
+0070070000feeef0000eee00000eee0000eeeee00feeeeef00feeef00c0fff00c11111117777777700000000000000007c7c77177b7b77377e7e772779999997
 000000000001010000011f000001f10000010100000101000001010000feeef077777777777777770000000000000000777c7777777b7777777e777779999997
 00000000000808000080080000080800008000800008080000080800000808007777777677777776000000000000000077777776777777767777777677999976
 ccccccccbbbbbbbbaaaaaaaaeeeeeeee000ccc00000ccc0000000000000000007777777777777777000000000000000071c77c1773b77b3779a77a9772e77e27
