@@ -16,15 +16,18 @@ end
 function init_game()
 	music(0,1000)
 	init_map()
-	init_bugs(levels[1])
+	_lvl=levels[1]
+	init_bugs(_lvl)
 	add_player()
 	dirx={-1,1,0,0}
 	diry={0,0,-1,1}
 	t=0
+	
 	game_over=false
 	btnbuffer=-1
-	_upd=update_start_menu
-	_drw=draw_start_menu
+	_msg=messages[1]
+	_upd=update_menu
+	_drw=draw_menu
 end
 
 function _update()
@@ -41,31 +44,20 @@ end
 -->8
 --menu
 
-function draw_start_menu()
-	local title="dapr - the game"
-	local line1="you're a developer helping"
-	local line2="teams to build distributed"
-	local line3="applications. collect the hat"
-	local line4="and the coins to learn about"
-	local line5="dapr and help the teams be"
-	local line6="successfull. good luck and"
-	local line7="avoid the ghosts!"
-	local action="- ❎/x to start -"
-	local credits="made by marc duiker, jun 2023"
-	draw_outline() 
+function draw_menu()
+	draw_outline()
 	draw_header()
-	print_message(title,23,12)
-	print_message(line1,35,1)
-	print_message(line2,43,1)
-	print_message(line3,51,1)
-	print_message(line4,59,1)
-	print_message(line5,67,1)
-	print_message(line6,75,1)
-	print_message(line7,83,1)
-	print_message(action,100,11)
-	print(credits,hcenter(credits),115,12)
+	print_message(_msg.title,23,12)
+	print_message(_msg.line1,35,1)
+	print_message(_msg.line2,43,1)
+	print_message(_msg.line3,51,1)
+	print_message(_msg.line4,59,1)
+	print_message(_msg.line5,67,1)
+	print_message(_msg.line6,75,1)
+	print_message(_msg.line7,83,1)
+	print_message(_msg.action,100,11)
+	print(_msg.credits,hcenter(_msg.credits),115,12)
 end
-
 
 function draw_outline()
 	rectfill(0,0,127,127,7)
@@ -83,7 +75,7 @@ function draw_header()
 	spr(get_frame(menu.anim_hat,menu.anim_speed),(menu.px+2)*8, menu.py*8)
 end
 
-function update_start_menu()
+function update_menu()
 	menu={
 		px=7,
 		py=1,
@@ -100,7 +92,20 @@ function update_start_menu()
 	end
 end
 
-message1 ={
+message0={
+ title="dapr - the game",
+	line1="you're a developer helping",
+	line2="teams to build distributed",
+	line3="systems. collect the hat and",
+	line4="the coins to learn about",
+	line5="dapr and help the teams be",
+	line6="successful. good luck and",
+	line7="avoid the ghosts!",
+	action="- ❎/x to start -",
+	credits="made by marc duiker, jun 2023"
+}
+
+message1={
 	line1="",
 	line2="i'm joining diagrid",
 	line3="as sr developer advocate!",
@@ -131,7 +136,7 @@ message4 ={
 	line4="cool together!",
 	action="press ❎/x to continue"
 }
-messages={message1,message2,message3,message4}
+messages={message0,message1,message2,message3,message4}
 
 function update_message_level()
 	if btnp(❎) then
@@ -153,7 +158,7 @@ function draw_message_level()
 	rect(x1+2,32,x2-2,112,11)
 	spr(get_frame(menu.anim_move,menu.anim_speed), menu.px*8, 40)
 	if p.hashat then
-		spr(p.hatspr,menu.x*8,33)
+		spr(p.hatspr,menu.px*8,33)
 	end
 	print_message(p.message.line1, 54, 7)
 	print_message(p.message.line2, 64, 7)
