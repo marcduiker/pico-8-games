@@ -106,11 +106,16 @@ message0={
 }
 
 message1={
-	line1="",
-	line2="i'm joining diagrid",
-	line3="as sr developer advocate!",
-	line4="",
-	action="press ❎/x to continue"
+	title="level 1 completed!",
+	line1="dapr speeds up microservice",
+	line2="development by offering",
+	line3="building blocks for:",
+	line4="service invocation, state",
+	line5="management, pub/sub,",
+	line6="workflow, secrets, bindings,",
+	line7="configuration, and actors.",
+	action="press ❎/x to continue",
+	credits=""
 }
 
 message2 ={
@@ -248,10 +253,12 @@ function draw_game_over()
 end
 
 function hcenter(s)
+  if s==nil then return 0 end
   return 64-#s*2
 end
 
 function ralign(s)
+	if s==nil then return 0 end
 	return 128-(#s+2)*2
 end
 -->8
@@ -396,9 +403,11 @@ function update_player(_dx,_dy)
 			_upd=update_player_move
 		elseif isendoflevel(destx,desty) then
 			sfx(5)
-			-- move to next level	
-			_upd=update_message_level
-			_drw=draw_message_level
+			-- move to next level
+			p.levelnr+=1
+			_msg=messages[p.levelnr]	
+			_upd=update_menu --update_message_level
+			_drw=draw_menu --draw_message_level
 		else
 			-- nothing special
 			sfx(0)
