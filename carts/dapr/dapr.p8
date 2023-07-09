@@ -86,9 +86,18 @@ function update_menu()
 	}
 	
 	if btnp(❎) then
-		sfx(4)
-		_upd=update_game
-		_drw=draw_player
+		if (p.isgameover or p.haswon) then
+			_upd=update_game_over
+			_drw=draw_game_over
+		else
+			sfx(4)
+			_upd=update_player_move
+			_drw=draw_player
+		end
+		
+		--sfx(4)
+		--_upd=update_game
+		--_drw=draw_player
 	end
 end
 
@@ -102,14 +111,14 @@ message0={
 	line6="successful. good luck and",
 	line7="avoid the ghosts!",
 	action="- ❎/x to start -",
-	credits="made by marc duiker, jun 2023"
+	credits="made by marc duiker, 2023"
 }
 
 message1={
 	title="level 1 completed!",
 	line1="dapr speeds up microservice",
 	line2="development by offering",
-	line3="building blocks for:",
+	line3="building blocks such as:",
 	line4="service invocation, state",
 	line5="management, pub/sub,",
 	line6="workflow, secrets, bindings,",
@@ -145,7 +154,7 @@ messages={message0,message1,message2,message3,message4}
 
 function update_message_level()
 	if btnp(❎) then
-		if p.isgameover then
+		if (p.isgameover or p.haswon) then
 			_upd=update_game_over
 			_drw=draw_game_over
 		else
@@ -173,7 +182,7 @@ function draw_message_level()
 end
 
 function print_message(text, y, color)
-	if #text > 0 then
+	if text!=nil and  #text > 0 then
 		print(text, hcenter(text), y, color)
 	end
 end
@@ -181,10 +190,9 @@ end
 currentindex=1
 nextindex=1
 linkmenu = {
-	{1, "twitter.com/marcduiker", 1},
-	{2, "mstdn.social/@marcduiker", 0},
-	{3, "dapr.io", 0},
-	{4, "diagrid.io", 0},
+	{1, "join the dapr discord", 0},
+	{2, "dapr.io", 0},
+	{3, "diagrid.io", 0},
 }
 
 function update_game_over()
@@ -224,21 +232,39 @@ function getactivelink()
 	end
 end
 
+haswon_message={
+	title="! great job !",
+	line1="you helped the team learn all",
+	line2="about dapr! they are ready",
+	line3="to use all the building blocks",
+	line4="and speed up development.",
+	action="- press 🅾️/c to play again -"
+}
+
+haslost_message={
+ title="! game over !",
+	line1="uh oh, what happened?",
+	line2="don't worry, we've applied",
+	line3="a resiliency policy so you",
+	line4="can retry.",
+	action="- press 🅾️/c to play again -"
+}
+
 function draw_game_over()
-	local title="! game over !"
-	local line1="uh oh, what happened?"
-	local line2="don't worry, we've applied"
-	local line3="a resiliency policy so you"
-	local line4="can retry."
-	local action="- press 🅾️/c to play again -"
+	local message
+	if (p.haswon) then
+		message=haswon_message
+	else
+		message=haslost_message
+	end
 	draw_outline()
 	draw_header()
-	print_message(title,23,12)
-	print_message(line1,35,1)
-	print_message(line2,43,1)
-	print_message(line3,51,1)
-	print_message(line4,59,1)
-	print_message(action,72,11)
+	print_message(message.title,23,12)
+	print_message(message.line1,35,1)
+	print_message(message.line2,43,1)
+	print_message(message.line3,51,1)
+	print_message(message.line4,59,1)
+	print_message(message.action,72,11)
 	local menuy=90
 	for link in all(linkmenu) do
 		if link[3]==0 then
@@ -290,6 +316,7 @@ function add_player()
 	p.ishit=false
 	p.thit=0
 	p.isgameover=false
+	p.haswon=false
 	p.respawnx=p.x
 	p.respawny=p.y
 	p.messagenr=1
@@ -405,9 +432,10 @@ function update_player(_dx,_dy)
 			sfx(3)
 			-- move to next level
 			p.levelnr+=1
+			p.haswon=true --temp shortcut to force end menu
 			_msg=messages[p.levelnr]	
-			_upd=update_menu --update_message_level
-			_drw=draw_menu --draw_message_level
+			_upd=update_menu
+			_drw=draw_menu
 		else
 			-- nothing special
 			p.ishit=false
@@ -1059,9 +1087,9 @@ __sfx__
 030800001c3141f3252333526335233351f3251c3151c302000003000000000320000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 030800001f3242b33111700243351f3001f335000002b335000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 030400001f3242b323000001d32429323000000e3241a3230c324183200c3200c3260000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-0d1000201d132000002112523131000001f13200000181321d132000001d1251f1351f13200000181221a1351f1320000023125241310000024132000002412524132330002612524131231221f1121d12518125
-0d1000201d132000002112523131000001f13200000181321d132000001d1251f1351f13200000181221a1351f132000002312524131000002413200000241252413233000261252b1322b1222b1122b11500000
-0d1000201d132000002112523131000001f13200000181321d132000001d1251f1351f13200000181221a1351f132000002312524131000002413200000241252413233000231252413529122291221d12518135
+0d1000201d122000002111523121000001f12200000181221d122000001d1151f1251f12200000181121a1251f1220000023115241210000024122000002411524122330002611524121231121f1121d11518115
+0d1000201d122000002111523121000001f12200000181221d122000001d1151f1251f12200000181121a1251f122000002311524121000002412200000241152412233000261152b1222b1122b1122b11500000
+0d1000201d122000002111523121000001f12200000181221d122000001d1151f1251f12200000181121a1251f122000002311524121000002412200000241152412233000231152412529112291121d11518125
 0b1000001151411511115211152111522115221151211515115141151111521115211152211522115121151513514135111352113521135221352213522135151351413511135211352113522135221352213515
 0b1000001151411511115211152111522115221151211515115141151111521115211152211522115121151513514135111352113521135221352213522135151d5141d5111d5211d5211d5221d5221d5221d515
 0b1000001151411511115211152111522115221151211515115141151111521115211152211522115121151513514135111352113521135221352213522135151f5141f5111f5211f5211f5221f5221f5221f515
