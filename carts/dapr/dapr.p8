@@ -18,7 +18,7 @@ function init_game()
 	init_map()
 	_lvl=levels[1]
 	init_bugs(_lvl)
-	add_player()
+	add_player(_lvl)
 	dirx={-1,1,0,0}
 	diry={0,0,-1,1}
 	t=0
@@ -94,10 +94,6 @@ function update_menu()
 			_upd=update_player_move
 			_drw=draw_player
 		end
-		
-		--sfx(4)
-		--_upd=update_game
-		--_drw=draw_player
 	end
 end
 
@@ -163,22 +159,6 @@ function update_message_level()
 			_drw=draw_player
 		end
 	end
-end
-
-function draw_message_level()
-	local x1=0
-	local x2=128
-	rectfill(x1,30,x2,114,0)
-	rect(x1+2,32,x2-2,112,11)
-	spr(get_frame(menu.anim_move,menu.anim_speed), menu.px*8, 40)
-	if p.hashat then
-		spr(p.hatspr,menu.px*8,33)
-	end
-	print_message(p.message.line1, 54, 7)
-	print_message(p.message.line2, 64, 7)
-	print_message(p.message.line3, 74, 7)
-	print_message(p.message.line4, 84, 7)
-	print_message(p.message.action, 100, 11)
 end
 
 function print_message(text, y, color)
@@ -290,11 +270,11 @@ end
 -->8
 -- player
 
-function add_player()
+function add_player(_lvl)
 	p={}
 	p.lives=3
-	p.levelnr=1
-	p.level=level1
+	p.levelnr=_lvl.id
+	p.level=_lvl
 	p.x=p.level.respawnx
 	p.dx=0
 	p.sx=0
@@ -312,15 +292,36 @@ function add_player()
 	p.isjumping=false
 	p.isflipped=false
 	p.seq=seq_walk
-	p.previouslevel=nil
 	p.ishit=false
 	p.thit=0
 	p.isgameover=false
 	p.haswon=false
 	p.respawnx=p.x
 	p.respawny=p.y
-	p.messagenr=1
-	p.message=message1
+	p.hashat=false
+	p.hatspr=nil
+end
+
+function reset_player(_lvl)
+	p.levelnr=_lvl.id
+	p.level=_lvl
+	p.x=p.level.respawnx
+	p.dx=0
+	p.sx=0
+	p.y=p.level.respawny
+	p.dy=0
+	p.sy=0
+	p.t=0
+	p.isstill=true
+	p.isjumping=false
+	p.isflipped=false
+	p.seq=seq_walk
+	p.ishit=false
+	p.thit=0
+	p.isgameover=false
+	p.haswon=false
+	p.respawnx=p.x
+	p.respawny=p.y
 	p.hashat=false
 	p.hatspr=nil
 end
@@ -487,23 +488,6 @@ end
 function collection_complete()
 	p.level.isdooropen=true
 	mset(p.level.doorx,p.level.doory,p.level.opendoorspr)
-end
-
-function completed_level()
-	p.respawnx=p.level.respawnx
-	p.respawny=p.level.respawny
-	p.message=messages[p.messagenr]
-	-- close current door to ensure player goes through the portal
-	p.level.isdooropen=false
-	p.previouslevel=p.level
-	if p.levelnr < 4 then
-		p.levelnr+=1
-		p.level=levels[p.levelnr]
-		p.messagenr+=1
-		p.level.isdooropen=true
-	else
-		p.isgameover=true
-	end
 end
 
 function update_player_move()
@@ -727,7 +711,7 @@ speed={
 }
 
 function draw_map()
-	map(0,0)
+	map(0, 0, 0, 0, 128, 32)
 	camera(p.level.camerax,p.level.cameray)
  if t%speed.medium==0 then
  	animate_tiles()
