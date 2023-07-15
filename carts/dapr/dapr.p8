@@ -537,7 +537,7 @@ end
 hats = {
 	{8, 52}, --blue
 	{9, 52}, --blue
- {24, 53},--green
+	{24, 53},--green
 	{25, 53},--green
 	{40, 54},--yellow
 	{41, 54},--yellow
@@ -561,7 +561,7 @@ function init_map()
 	level1={
 		id=1,
 		camerax=16*8*0,
-		cameray=0,
+		cameray=16*8*0,
 		mapx=0,
 		mapy=0,
 		isdooropen=false,
@@ -594,10 +594,10 @@ function init_map()
 		bug3dir=moves.left}
 	level2={
 		id=2,
-		camerax=16*8*1,
-		cameray=0,
+		camerax=16*8*0,
+		cameray=16*8*0,
 		mapx=0,
-		mapy=0,
+		mapy=16,
 		isdooropen=false,
 		doorx=7,
 		doory=10,
@@ -711,7 +711,8 @@ speed={
 }
 
 function draw_map()
-	map(0, 0, 0, 0, 128, 32)
+	--map(0,0)
+	map(p.level.mapx, p.level.mapy)
 	camera(p.level.camerax,p.level.cameray)
  if t%speed.medium==0 then
  	animate_tiles()
