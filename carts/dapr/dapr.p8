@@ -18,7 +18,8 @@ function init_game()
 	init_map()
 	_lvl=levels[1]
 	init_bugs(_lvl)
-	add_player(_lvl)
+	add_player()
+	init_player(_lvl)
 	dirx={-1,1,0,0}
 	diry={0,0,-1,1}
 	t=0
@@ -270,39 +271,18 @@ end
 -->8
 -- player
 
-function add_player(_lvl)
+function add_player()
 	p={}
 	p.lives=3
-	p.levelnr=_lvl.id
-	p.level=_lvl
-	p.x=p.level.respawnx
-	p.dx=0
-	p.sx=0
-	p.y=p.level.respawny
-	p.dy=0
-	p.sy=0
-	p.t=0
 	p.sprite=1
 	p.anim_speed=10
 	p.anim_still={6,7}
 	p.anim_move={2,3}
 	p.anim_jump={20,21}
 	p.anim_bug={4,5,6}
-	p.isstill=true
-	p.isjumping=false
-	p.isflipped=false
-	p.seq=seq_walk
-	p.ishit=false
-	p.thit=0
-	p.isgameover=false
-	p.haswon=false
-	p.respawnx=p.x
-	p.respawny=p.y
-	p.hashat=false
-	p.hatspr=nil
 end
 
-function reset_player(_lvl)
+function init_player(_lvl)
 	p.levelnr=_lvl.id
 	p.level=_lvl
 	p.x=p.level.respawnx
@@ -431,13 +411,7 @@ function update_player(_dx,_dy)
 			move(_dx,_dy)
 			_upd=update_player_move
 		elseif isendoflevel(destx,desty) then
-			sfx(3)
-			-- move to next level
-			p.levelnr+=1
-			p.haswon=true --temp shortcut to force end menu
-			_msg=messages[p.levelnr]	
-			_upd=update_menu
-			_drw=draw_menu
+			move_next_level()
 		else
 			-- nothing special
 			p.ishit=false
@@ -452,6 +426,18 @@ function update_player(_dx,_dy)
 	else 
 		p.thit=0
 	end
+end
+
+function move_next_level()
+	sfx(3)
+	p.levelnr+=1
+	_lvl=levels[p.levelnr]
+	init_bugs(_lvl)
+	init_player(_lvl)
+	--p.haswon=true --temp shortcut to force end menu
+	_msg=messages[p.levelnr]
+	_upd=update_menu
+	_drw=draw_menu
 end
 
 function move(_dx, _dy)
@@ -595,9 +581,9 @@ function init_map()
 	level2={
 		id=2,
 		camerax=16*8*0,
-		cameray=16*8*0,
-		mapx=0,
-		mapy=16,
+		cameray=16*8*1,
+		mapx=16,
+		mapy=0,
 		isdooropen=false,
 		doorx=7,
 		doory=10,
@@ -617,15 +603,15 @@ function init_map()
 		score=0,
 		maxscore=12,
 		bugspeed=speed.medium,
-		bug1x=1,
-		bug1y=7,
-		bug1dir=2,
-		bug2x=10,
-		bug2y=3,
-		bug2dir=1,
-		bug3x=11,
-		bug3y=11,
-		bug3dir=1}
+		bug1x=25,
+		bug1y=4,
+		bug1dir=moves.left,
+		bug2x=17,
+		bug2y=12,
+		bug2dir=moves.right,
+		bug3x=28,
+		bug3y=12,
+		bug3dir=moves.left}
 	level3={
 		id=3,
 		isdooropen=false,
@@ -713,7 +699,7 @@ speed={
 function draw_map()
 	--map(0,0)
 	map(p.level.mapx, p.level.mapy)
-	camera(p.level.camerax,p.level.cameray)
+	--camera(p.level.camerax,p.level.cameray)
  if t%speed.medium==0 then
  	animate_tiles()
  end
@@ -806,9 +792,9 @@ local x_movements={-1,1,0,0}
 local y_movements={0,0,-1,1}
 local reverse_directions={1,0,3,2}
 
-local bug1={x=nil,y=nil,dir=nil,tile=nill,speed=nil}
-local bug2={x=nil,y=nil,dir=nil,tile=nill,speed=nil}
-local bug3={x=nil,y=nil,dir=nil,tile=nill,speed=nil}
+local bug1={x=nil,y=nil,dir=nil,tile=nil,speed=nil}
+local bug2={x=nil,y=nil,dir=nil,tile=nil,speed=nil}
+local bug3={x=nil,y=nil,dir=nil,tile=nil,speed=nil}
 
 local bugs={bug1,bug2,bug3}
 local bugs_anim={128,129}
