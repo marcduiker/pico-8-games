@@ -61,19 +61,19 @@ function draw_menu()
 end
 
 function draw_outline()
-	rectfill(0,0,127,127,7)
-	rect(2,2,125,125,14) 
+	rectfill(p.level.offsetx+0,p.level.offsety+0,p.level.offsetx+127,p.level.offsety+127,7)
+	rect(p.level.offsetx+2,p.level.offsety+2,p.level.offsetx+125,p.level.offsety+125,14) 
 end
 
 function draw_header()
-	spr(tiles.bluewall,1*8,menu.py*8)
-	spr(tiles.bluewall,13*8,menu.py*8)
+	spr(tiles.bluewall,p.level.offsetx+1*8,p.level.offsety+menu.py*8)
+	spr(tiles.bluewall,p.level.offsetx+13*8,p.level.offsety+menu.py*8)
 	for x=2,12 do
-		spr(tiles.floor,x*8,menu.py*8)
+		spr(tiles.floor,p.level.offsetx+x*8,p.level.offsety+menu.py*8)
 	end
-	spr(get_frame(menu.anim_move,menu.anim_speed),menu.px*8,menu.py*8)
-	spr(get_frame(menu.anim_coin,menu.anim_speed),(menu.px-2)*8, menu.py*8)
-	spr(get_frame(menu.anim_hat,menu.anim_speed),(menu.px+2)*8, menu.py*8)
+	spr(get_frame(menu.anim_move,menu.anim_speed),p.level.offsetx+menu.px*8, p.level.offsety+menu.py*8)
+	spr(get_frame(menu.anim_coin,menu.anim_speed),p.level.offsetx+(menu.px-2)*8, p.level.offsety+menu.py*8)
+	spr(get_frame(menu.anim_hat,menu.anim_speed),p.level.offsetx+(menu.px+2)*8, p.level.offsety+menu.py*8)
 end
 
 function update_menu()
@@ -169,7 +169,7 @@ end
 
 function print_message(text, y, color)
 	if text!=nil and  #text > 0 then
-		print(text, hcenter(text), y, color)
+		print(text, p.level.offsetx+hcenter(text), y, color)
 	end
 end
 
@@ -280,6 +280,7 @@ function add_player()
 	p={}
 	p.isplaying=false
 	p.levelnr=0
+	p.level = {offsetx=0, offsety=0}
 	p.lives=3
 	p.sprite=1
 	p.anim_speed=10
@@ -316,16 +317,16 @@ end
 
 function draw_player()
 	if p.ishit then
-		spr(get_frame(p.anim_bug,p.anim_speed),p.x*8+p.dx,p.y*8+p.dy,1,1,p.isflipped)
+		spr(get_frame(p.anim_bug,p.anim_speed),p.level.offsetx+p.x*8+p.dx,p.level.offsety+p.y*8+p.dy,1,1,p.isflipped)
 	elseif p.isjumping then
-		spr(get_frame(p.anim_jump,p.anim_speed),p.x*8+p.dx,p.y*8+p.dy,1,1,p.isflipped)
+		spr(get_frame(p.anim_jump,p.anim_speed),p.level.offsetx+p.x*8+p.dx,p.level.offsety+p.y*8+p.dy,1,1,p.isflipped)
 	elseif p.isstill then
-		spr(get_frame(p.anim_still,p.anim_speed),p.x*8+p.dx,p.y*8+p.dy,1,1,p.isflipped)
+		spr(get_frame(p.anim_still,p.anim_speed),p.level.offsetx+p.x*8+p.dx,p.level.offsety+p.y*8+p.dy,1,1,p.isflipped)
 	else
-		spr(get_frame(p.anim_move,p.anim_speed),p.x*8+p.dx,p.y*8+p.dy,1,1,p.isflipped)
+		spr(get_frame(p.anim_move,p.anim_speed),p.level.offsetx+p.x*8+p.dx,p.level.offsety+p.y*8+p.dy,1,1,p.isflipped)
 	end
 	if p.hashat then
-		spr(p.hatspr,p.x*8+p.dx,p.y*8+p.dy-animy(),1,1,p.isflipped)
+		spr(p.hatspr,p.level.offsetx+p.x*8+p.dx,p.level.offsety+p.y*8+p.dy-animy(),1,1,p.isflipped)
 	end
 	draw_score()
 end
@@ -336,14 +337,14 @@ function animy()
 end
 
 function draw_score()
-	print("level  "..  p.level.id,2, 2, 7)
+	print("level  "..  p.level.id,p.level.offsetx+2, p.level.offsety+2, 7)
 	for x=0,p.lives-1 do
-		spr(p.sprite, 58+x*8, 0)
+		spr(p.sprite, p.level.offsetx+58+x*8, p.level.offsety+0)
 	end
 	scoretxt=p.level.score.."/"..p.level.maxscore
-	scorex=ralign(scoretxt)-6
-	spr(tiles.menuscore, scorex-12, 0)
-	print(scoretxt, scorex, 2, 7)
+	scorex=p.level.offsetx+ralign(scoretxt)-6
+	spr(tiles.menuscore, scorex-12, p.level.offsety+0)
+	print(scoretxt, scorex, p.level.offsety+2, 7)
 end
 
 function print_dbg()
@@ -550,8 +551,8 @@ end
 function init_map()
 	level1={
 		id=1,
-		camerax=16*8*0,
-		cameray=16*8*0,
+		offsetx=16*8*0,
+		offsety=16*8*0,
 		mapx=0,
 		mapy=0,
 		isdooropen=false,
@@ -584,8 +585,8 @@ function init_map()
 		bug3dir=moves.left}
 	level2={
 		id=2,
-		camerax=16*8*1,
-		cameray=16*8*0,
+		offsetx=16*8*1,
+		offsety=16*8*0,
 		mapx=16,
 		mapy=0,
 		isdooropen=false,
@@ -704,7 +705,7 @@ function draw_map()
 	--map(0,0)
 	--map(p.level.mapx, p.level.mapy)
 	map(0,0,0,0,120,16)
-	camera(p.level.camerax,p.level.cameray)
+	camera(p.level.offsetx,p.level.offsety)
  if t%speed.medium==0 then
  	animate_tiles()
  end
