@@ -471,9 +471,9 @@ function hit_move(_dx, _dy)
 end
 
 function setscreens()
-	mset(p.level.serverx,p.level.servery,p.level.servertileon)	
-	mset(p.level.screen1x,p.level.screen1y,p.level.screentileon)	
-	mset(p.level.screen2x,p.level.screen2y,p.level.screentileon)	
+	mset(p.level.serverx,p.level.servery,p.level.servertileon)
+	mset(p.level.screen1x,p.level.screen1y,p.level.screentileon)
+	mset(p.level.screen2x,p.level.screen2y,p.level.screentileon)
 end
 
 function collection_complete()
@@ -594,13 +594,13 @@ function init_map()
 		doory=10,
 		opendoorspr=34,
 		closeddoorspr=18,
-		screen1x=7,
-		screen1y=6,
-		screen2x=9,
-		screen2y=6,
+		screen1x=23,
+		screen1y=8,
+		screen2x=25,
+		screen2y=8,
 		screentileon=tiles.screen_green_on,
-		serverx=8,
-		servery=6,
+		serverx=24,
+		servery=8,
 		servertileon=tiles.server_green_on,
 		hasplayed=false,
 		respawnx=7,
@@ -702,7 +702,7 @@ speed={
 }
 
 function draw_map()
-	map()
+	map(p.level.mapx,p.level.mapy,p.level.offsetx,p.level.offsety,16,16)
 	camera(p.level.offsetx,p.level.offsety)
  if t%speed.medium==0 then
  	animate_tiles()
