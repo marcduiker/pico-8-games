@@ -95,7 +95,6 @@ function update_menu()
 			sfx(4)
 			p.levelnr+=1
 			_lvl=levels[p.levelnr]
-			init_bugs(_lvl)
 			init_player(_lvl)
 			_upd=update_player_move
 			_drw=draw_player
@@ -412,6 +411,7 @@ function update_player(_dx,_dy)
 			end
 			p.isjumping=true
 			if ishat(destx,desty) then
+				sfx(5)
 				p.hashat=true
 				p.hatspr=getsmallhat(mget(destx,desty))
 				replace_tiles(getservertile)
@@ -543,6 +543,18 @@ end
 -- map
 
 function init_map()
+	
+	bugs_level1 = {
+		{x=1,y=7,dir=moves.up,tile=tiles.floor,speed=speed.medium},
+		{x=10,y=3,dir=moves.right,tile=tiles.floor,speed=speed.medium},
+		{x=11,y=11,dir=moves.left,tile=tiles.floor,speed=speed.medium}
+	}
+	bugs_level2 = {
+		{x=25,y=4,dir=moves.left,tile=tiles.floor,speed=speed.medium},
+		{x=17,y=12,dir=moves.right,tile=tiles.floor,speed=speed.medium},
+		{x=30,y=12,dir=moves.left,tile=tiles.floor,speed=speed.medium}
+	}
+	
 	level1={
 		id=1,
 		offsetx=16*8*0,
@@ -559,16 +571,8 @@ function init_map()
 		respawny=2,
 		score=0,
 		maxscore=12,
-		bugspeed=speed.medium,
-		bug1x=1,
-		bug1y=7,
-		bug1dir=moves.up,
-		bug2x=10,
-		bug2y=3,
-		bug2dir=moves.right,
-		bug3x=11,
-		bug3y=11,
-		bug3dir=moves.left}
+		bugs=bugs_level1
+	}
 	level2={
 		id=2,
 		offsetx=16*8*1,
@@ -585,16 +589,8 @@ function init_map()
 		respawny=2,
 		score=0,
 		maxscore=12,
-		bugspeed=speed.medium,
-		bug1x=25,
-		bug1y=4,
-		bug1dir=moves.left,
-		bug2x=17,
-		bug2y=12,
-		bug2dir=moves.right,
-		bug3x=30,
-		bug3y=12,
-		bug3dir=moves.left}
+		bugs=bugs_level2
+	}
 	level3={
 		id=3,
 		isdooropen=false,
@@ -639,6 +635,8 @@ function init_map()
 		portalspr={121,122,123,124,125}}
 	levels={level1,level2,level3,level4}
 end
+
+
 
 tiles={
 	floor=63,
@@ -700,7 +698,7 @@ function draw_map()
  	animate_tiles()
  end
  if t%speed.medium==0 then
- 	move_bugs()
+ 	move_bugs(p.level.bugs)
  end
 end
 
@@ -814,34 +812,10 @@ end
 local x_movements={-1,1,0,0}
 local y_movements={0,0,-1,1}
 local reverse_directions={1,0,3,2}
-
-local bug1={x=nil,y=nil,dir=nil,tile=nil,speed=nil}
-local bug2={x=nil,y=nil,dir=nil,tile=nil,speed=nil}
-local bug3={x=nil,y=nil,dir=nil,tile=nil,speed=nil}
-
-local bugs={bug1,bug2,bug3}
 local bugs_anim={128,129}
 
-function init_bugs(level)
-	bug1.x=level.bug1x
-	bug1.y=level.bug1y
-	bug1.dir=level.bug1dir
-	bug1.tile=tiles.floor
-	bug1.speed=level.bugspeed
-	bug2.x=level.bug2x
-	bug2.y=level.bug2y
-	bug2.dir=level.bug2dir
-	bug2.tile=tiles.floor
-	bug2.speed=level.bugspeed
-	bug3.x=level.bug3x
-	bug3.y=level.bug3y
-	bug3.dir=level.bug3dir
-	bug3.tile=tiles.floor
-	bug3.speed=level.bugspeed
-end
-
-function move_bugs()
-	for bug in all(bugs) do
+function move_bugs(_bugs)
+	for bug in all(_bugs) do
 		move_bug(bug)
 	end
 end
