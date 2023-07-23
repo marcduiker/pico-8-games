@@ -414,7 +414,8 @@ function update_player(_dx,_dy)
 			if ishat(destx,desty) then
 				p.hashat=true
 				p.hatspr=getsmallhat(mget(destx,desty))
-				setscreens()
+				replace_tiles(getservertile)
+				replace_tiles(getscreentile)
 			end
 			mset(destx,desty,tiles.floor)
 			move(_dx,_dy)
@@ -468,12 +469,6 @@ function hit_move(_dx, _dy)
 	p.dx=0
 	p.dy=0
 	p.seq=seq_obstacle
-end
-
-function setscreens()
-	mset(p.level.serverx,p.level.servery,p.level.servertileon)
-	mset(p.level.screen1x,p.level.screen1y,p.level.screentileon)
-	mset(p.level.screen2x,p.level.screen2y,p.level.screentileon)
 end
 
 function collection_complete()
@@ -544,7 +539,6 @@ function getsmallhat(largehatspr)
 	end
 end
 
-
 -->8
 -- map
 
@@ -560,14 +554,6 @@ function init_map()
 		doory=10,
 		opendoorspr=32,
 		closeddoorspr=16,
-		screen1x=7,
-		screen1y=6,
-		screen2x=9,
-		screen2y=6,
-		screentileon=tiles.screen_green_on,
-		serverx=8,
-		servery=6,
-		servertileon=tiles.server_green_on,
 		hasplayed=false,
 		respawnx=7,
 		respawny=2,
@@ -594,14 +580,6 @@ function init_map()
 		doory=10,
 		opendoorspr=34,
 		closeddoorspr=18,
-		screen1x=23,
-		screen1y=8,
-		screen2x=25,
-		screen2y=8,
-		screentileon=tiles.screen_green_on,
-		serverx=24,
-		servery=8,
-		servertileon=tiles.server_green_on,
 		hasplayed=false,
 		respawnx=7,
 		respawny=2,
@@ -663,26 +641,40 @@ function init_map()
 end
 
 tiles={
-	screen_blue_off=67,
-	screen_blue_on=69,
-	server_blue_off=71,
-	server_blue_on=73,
-	screen_green_off=83,
-	screen_green_on=85,
-	server_green_off=87,
-	server_green_on=89,
 	floor=63,
 	bluewall=48,
 	menuscore=112,
 	menuhat=113
 }
 
-local tile_types={
+servers = {
+	{71,73}, --blue
+	{72,74}, --blue
+	{87,89},--green
+	{88,90},--green
+	{103,105},--yellow
+	{104,106},--yellow
+	{119,121},--pink
+	{120,122} --pink
+}
+
+screens = {
+	{67,69}, --blue
+	{68,70}, --blue
+	{83,85},--green
+	{84,86},--green
+	{99,101},--yellow
+	{100,102},--yellow
+	{115,117},--pink
+	{116,118} --pink
+}
+
+local flag_types={
 	wall=0,
 	collectable=1,
 	score=2,
 	hat=3,
-	server=4,
+	endoflevel=4,
 	bug=5,
 	anim_state_1=6,
 	anim_state_2=7
@@ -712,6 +704,34 @@ function draw_map()
  end
 end
 
+function replace_tiles(replacefn)
+	for x=p.level.mapx,p.level.mapx+15 do
+		for y=p.level.mapy,p.level.mapy+15 do
+			local tile=mget(x,y)
+			local matchingtile=replacefn(tile)
+			if matchingtile!=nil then
+				mset(x,y,matchingtile)
+			end
+		end
+	end
+end
+
+function getservertile(_servertile)
+	for server in all(servers) do
+		if server[1] == _servertile then
+			return server[2]
+		end
+	end
+end
+
+function getscreentile(_screentile)
+	for screen in all(screens) do
+		if screen[1] == _screentile then
+			return screen[2]
+		end
+	end
+end
+
 function animate_tiles()
 	for x=p.level.mapx,p.level.mapx+15 do
 		for y=p.level.mapy,p.level.mapy+15 do
@@ -726,12 +746,12 @@ end
 
 function is_anim_state_1(x,y)
 	local tile=mget(x,y)
-	return fget(tile,tile_types.anim_state_1)
+	return fget(tile,flag_types.anim_state_1)
 end
 
 function is_anim_state_2(x,y)
 	local tile=mget(x,y)
-	return fget(tile,tile_types.anim_state_2)
+	return fget(tile,flag_types.anim_state_2)
 end
 
 
@@ -747,33 +767,32 @@ function unswap_tiles(x,y)
 end
 
 function isendoflevel(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,tile_types.server)
+	return hasflag(_x,_y,flag_types.endoflevel)
 end
 
 function isobstacle(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,tile_types.wall)
+	return hasflag(_x,_y,flag_types.wall)
 end
 
 function iscollectable(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,tile_types.collectable)
+	return hasflag(_x,_y,flag_types.collectable)
 end
 
 function isscore(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,tile_types.score)
+	return hasflag(_x,_y,flag_types.score)
 end
 
 function ishat(_x,_y)
-	local tile=mget(_x,_y)
-	return fget(tile,tile_types.hat)
+	return hasflag(_x,_y,flag_types.hat)
 end
 
 function isbug(_x,_y)
+	return hasflag(_x,_y,flag_types.bug)
+end
+
+function hasflag(_x,_y,_flagtype)
 	local tile=mget(_x,_y)
-	return fget(tile,tile_types.bug)
+	return fget(tile,_flagtype)
 end
 -->8
 -- tools
@@ -1067,7 +1086,7 @@ __map__
 333f4b6c30303f3f3f3f3f306b7c3f33313f333333333f3f3030303030303f31000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 333f7c5b30303f5357533f305c4b3f33313f3f3f3f3f3f3f3f3f3f3f3f3f3f31000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 333f3f3f30303f1a5d0a3f303f3f3f33313131313f3232323232323f31313131000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
-333f3030303f3f3f3f3f3f3030303f3331431a3f3f323f434743323f3f0a4331000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+333f3030303f3f3f3f3f3f3030303f3331431a3f3f323f434743323f080a4331000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 333f30303f3f3f3f3f3f3f3f3f303f33313131313f323f2a5d3a323f31313131000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 333f3030303030103030303030303f33313f3f3f3f3232321232323f3f3f3f31000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 333f32323f3f3f3f3f3f3f3f32323f33313f3030303030303f33333333333f31000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
