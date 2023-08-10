@@ -383,7 +383,7 @@ function update_player(_dx,_dy)
 	
 	local destx=p.level.mapx+p.x+_dx
 	local desty=p.level.mapy+p.y+_dy
-	if p.thit%60==0 then
+	if p.thit%30==0 then
 		p.ishit=false
 		p.thit=0
 	end
@@ -432,9 +432,12 @@ function update_player(_dx,_dy)
 			_upd=update_player_move
 		elseif isendoflevel(destx,desty) then
 			level_complete()
+		elseif p.ishit then
+			-- player is paralyzed
 		else
 			-- nothing special
 			p.ishit=false
+			p.thit=0
 			p.isjumping=false
 			move(_dx,_dy)
 			_upd=update_player_move
