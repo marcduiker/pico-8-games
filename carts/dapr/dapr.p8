@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 39
+version 41
 __lua__
 -- start
 -- dapr
@@ -56,7 +56,7 @@ function draw_menu()
 	print_message(_msg.line6,75,1)
 	print_message(_msg.line7,83,1)
 	print_message(_msg.action,100,11)
-	print(_msg.credits,hcenter(_msg.credits),115,12)
+	print_message(_msg.credits,115,12)
 end
 
 function draw_outline()
@@ -105,60 +105,52 @@ message0={
  title="dapr - the game",
 	line1="you're a developer helping",
 	line2="teams to build distributed",
-	line3="systems. collect the hat and",
-	line4="the coins to learn about",
-	line5="dapr and help the teams be",
-	line6="successful. good luck and",
-	line7="avoid the rogue messages!",
+	line3="apps using dapr. collect the",
+	line4="coins and the hat to help",
+	line5="the teams be successful.",
+	line6="avoid the rogue messages and",
+	line7="blue powerlines! good luck!",
 	action="❎/x=start, arrows=move",
-	credits="made by marc duiker, 2023"
+	credits="made by marc duiker, 2024"
 }
 
 message1={
 	title="level 1 completed!",
 	line1="dapr speeds up microservice",
 	line2="development by offering",
-	line3="building blocks such as:",
-	line4="service invocation, state",
-	line5="management, pub/sub,",
-	line6="workflow, secrets, bindings,",
-	line7="configuration, and actors.",
+	line3="apis for communication,",
+	line4="state, and workflow.",
+	line5="dapr also has built-in",
+	line6="resilience, security, and",
+	line7="observability capabilities!",
 	action="press ❎/x to continue",
-	credits=""
 }
 
 message2 ={
 	title="level 2 completed",
-	line1="dapr runs in a seperate",
-	line2="process (sidecar) next to",
-	line3="your application. your app",
-	line4="uses the standard dapr api",
-	line5="to communicate with the dapr",
-	line6="runtime.",
-	line7="",
+	line1="the dapr apis are decoupled",
+	line2="from the underlying infra.",
+	line3="you can swap out message",
+	line4="brokers, state stores,",
+	line5="secret stores, middleware,",
+	line6="and more using component",
+	line7="files.",
 	action="press ❎/x to continue"
 }
 
 message3 ={
  title="level 3 completed",
-	line1="",
-	line2="",
-	line3="",
-	line4="",
-	line5="",
-	line6="",
-	line7="",
+	line1="dapr runs everwhere!",
+	line2="from VMs to k8s on all major",
+	line3="cloud providers, or on-prem.",
+	line4="dapr is part of cncf and has",
+	line5="a large and active community.",
+	line6="give dapr a star on github ",
+	line7="and join the dapr discord!",
 	action="press ❎/x to continue"
 }
 
-message4 ={
-	line1="connect with me if you're",
-	line2="using dapr, have feedback,",
-	line3="or want to create something",
-	line4="cool together!",
-	action="press ❎/x to continue"
-}
-messages={message1,message2,message3,message4}
+messages={message1,message2,message3}
 
 function update_message_level()
 	if btnp(❎) then
@@ -182,9 +174,10 @@ end
 currentindex=1
 nextindex=1
 linkmenu = {
-	{1, "join the dapr discord", 0},
-	{2, "dapr.io", 0},
-	{3, "diagrid.io", 0},
+	{1, "check dapr.io", 1},
+	{2, "star the github repo", 0},
+	{3, "join the dapr discord", 0},
+	{4, "visit marcduiker.dev", 0},
 }
 
 function update_game_over()
@@ -212,8 +205,8 @@ function update_game_over()
 			nextindex-=1
 		end
 	end
-	linkmenu[currentindex][#linkmenu]=0
-	linkmenu[nextindex][#linkmenu]=1
+	linkmenu[currentindex][3]=0
+	linkmenu[nextindex][3]=1
 end
 
 function getactivelink()
@@ -228,18 +221,20 @@ haswon_message={
 	title="! great job !",
 	line1="you helped the team learn all",
 	line2="about dapr! they are ready",
-	line3="to use all the building blocks",
-	line4="and speed up development.",
-	action="- press 🅾️/c to play again -"
+	line3="to use the apis and components",
+	line4="to build distrubuted apps!",
+	action="- press 🅾️/c to play again -",
+	alt="or"
 }
 
 haslost_message={
  title="! game over !",
 	line1="uh oh, what happened?",
 	line2="don't worry, we've applied",
-	line3="a resiliency policy so you",
-	line4="can retry.",
-	action="- press 🅾️/c to play again -"
+	line3="a resiliency policy",
+	line4="so you can retry.",
+	action="- press 🅾️/c to play again -",
+	alt="or"
 }
 
 function draw_game_over()
@@ -256,8 +251,9 @@ function draw_game_over()
 	print_message(message.line2,43,1)
 	print_message(message.line3,51,1)
 	print_message(message.line4,59,1)
-	print_message(message.action,72,11)
-	local menuy=90
+	print_message(message.action,71,11)
+	print_message(message.alt,79, 1)
+	local menuy=91
 	for link in all(linkmenu) do
 		if link[3]==0 then
 			-- regular
@@ -285,7 +281,7 @@ end
 function add_player()
 	p={}
 	p.isplaying=false
-	p.levelnr=3 --todo set to 0
+	p.levelnr=0
 	p.level={offsetx=0, offsety=0}
 	p.lives=3
 	p.sprite=1
@@ -452,7 +448,10 @@ end
 
 function level_complete()
 	sfx(3)
-	--p.haswon=true --temp shortcut to force end menu
+	p.haswon=true -- temp
+	if p.levelnr==#levels then
+		p.haswon=true
+	end
 	_msg=messages[p.levelnr]
 	_upd=update_menu
 	_drw=draw_menu
@@ -653,7 +652,7 @@ function init_map()
 		maxscore=18,
 		bugs=bugs_level4
 	}
-	levels={level1,level2,level3,level4}
+	levels={level1,level2,level3}
 end
 
 tiles={
