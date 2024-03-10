@@ -1,7 +1,8 @@
 ﻿<html>
 <head>
-<title>Dapr game</title>
+<title>Dapr</title>
 <meta name="author" content="Marc Duiker">
+
 <meta name="viewport" content="width=device-width, user-scalable=no">
 <script src="https://unpkg.com/pico8-gpio-listener@0.2.2/pico8-gpio-listener.js"></script>
 <script type="text/javascript">
