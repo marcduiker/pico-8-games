@@ -1,10 +1,9 @@
 pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
--- start
--- dapr
+-- the dapr game
 -- by marc duiker
--- jun 2023
+-- mar 2024
 -- https://twitter.com/marcduiker
 -- https://mstdn.social/@marcduiker
 
@@ -129,9 +128,9 @@ message1={
 message2 ={
 	title="level 2 completed",
 	line1="the dapr apis are decoupled",
-	line2="from the underlying resources.",
-	line3="you can swap out message",
-	line4="brokers, state stores,",
+	line2="from the underlying",
+	line3="resources. you can swap out",
+	line4="message brokers, state stores",
 	line5="secret stores, middleware,",
 	line6="and more via yaml component",
 	line7="files.",
