@@ -106,8 +106,8 @@ message0={
 	line1="you're a developer helping",
 	line2="teams to build distributed",
 	line3="apps using dapr. collect the",
-	line4="coins (and the hat) to help",
-	line5="the teams be successful.",
+	line4="dapr coins (and the hat) to",
+	line5="help the teams be successful.",
 	line6="avoid the rogue messages and",
 	line7="blue powerlines! good luck!",
 	action="❎/x=start, arrows=move",
@@ -116,8 +116,8 @@ message0={
 
 message1={
 	title="level 1 completed!",
-	line1="dapr speeds up microservice",
-	line2="development by offering",
+	line1="dapr increases developer",
+	line2="productivity by offering",
 	line3="apis for communication,",
 	line4="state, and workflow.",
 	line5="dapr also has built-in",
@@ -129,11 +129,11 @@ message1={
 message2 ={
 	title="level 2 completed",
 	line1="the dapr apis are decoupled",
-	line2="from the underlying infra.",
+	line2="from the underlying resources.",
 	line3="you can swap out message",
 	line4="brokers, state stores,",
 	line5="secret stores, middleware,",
-	line6="and more making dapr",
+	line6="and more via yaml component",
 	line7="files.",
 	action="press ❎/x to continue"
 }
