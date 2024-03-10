@@ -1,7 +1,7 @@
 pico-8 cartridge // http://www.pico-8.com
 version 41
 __lua__
--- the dapr game
+-- the dapr game v1.1
 -- by marc duiker
 -- mar 2024
 -- https://twitter.com/marcduiker
@@ -105,10 +105,10 @@ message0={
 	line1="you're a developer helping",
 	line2="teams to build distributed",
 	line3="apps using dapr. collect the",
-	line4="dapr coins (and the hat) to",
-	line5="help the teams be successful.",
+	line4="coins (and the hat) to share",
+	line5="dapr knowledge with the team.",
 	line6="avoid the rogue messages and",
-	line7="blue powerlines! good luck!",
+	line7="blue power lines! good luck!",
 	action="❎/x=start, arrows=move",
 	credits="made by marc duiker, 2024"
 }
